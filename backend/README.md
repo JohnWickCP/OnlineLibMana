@@ -137,25 +137,3 @@ source .env
 mvn spring-boot:run
 ```
 
-## 📋 API Documentation
-
-Sau khi khởi động ứng dụng, truy cập:
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
-- **API Docs**: http://localhost:8080/v3/api-docs
-
-## 🤝 Đóng góp
-
-1. Fork repository
-2. Tạo feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Tạo Pull Request
-
-## 📝 License
-
-Dự án này được phát hành dưới [MIT License](LICENSE).
-
----
-
-**Phát triển bởi**: [Tên nhóm/cá nhân]  
-**Liên hệ**: [email@example.com]
