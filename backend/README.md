@@ -24,7 +24,7 @@ Hệ thống thư viện điện tử được phát triển bằng **Spring Boo
 ## 📂 Cấu trúc thư mục
 
 ```
-Project1/
+backend/
 ├── .idea/              # IntelliJ IDEA configuration
 ├── .mvn/               # Maven wrapper files
 ├── src/                # Source code
