@@ -1,4 +1,4 @@
-// src/app/page.js
+// src/app/layout.js
 
 export default function Home() {
   return (
