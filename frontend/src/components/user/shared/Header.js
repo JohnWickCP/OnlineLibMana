@@ -9,7 +9,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
-    <main className="min-h-screen font-sans">
+    <main className=" font-sans">
       {/* Header */}
       <header className="bg-gray-700 shadow-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-4">
@@ -47,7 +47,7 @@ export default function Home() {
                       className="uppercase hover:text-green-400 text-sm font-medium"
                       onClick={() => setIsLoggedIn(true)} // Demo login
                     >
-                      Login
+                      Log in
                     </a>
                   </li>
                   <li>
