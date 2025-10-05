@@ -8,7 +8,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
-    <main className="min-h-screen font-sans">
+    <div className="min-h-auto font-sans">
       {/* Header */}
       <header className="bg-gray-700 shadow-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-4">
@@ -64,6 +64,6 @@ export default function Home() {
           </nav>
         </div>
       </header>
-    </main>
+    </div>
   );
 }
