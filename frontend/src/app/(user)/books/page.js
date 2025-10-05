@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import BookCard from '@/components/shared/BookCard';
 import Pagination from '@/components/shared/Pagination';
 import { booksAPI } from '@/lib/api';
 
-export default function BooksPage() {
+function BooksContent() {
   const searchParams = useSearchParams();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -161,5 +161,38 @@ export default function BooksPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap BooksContent trong Suspense
+export default function BooksPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#E9E7E0]">
+        <div className="bg-white border-b border-neutral-200">
+          <div className="container mx-auto px-4 py-8">
+            <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
+              Browse Standard Ebooks
+            </h1>
+            <p className="text-neutral-600">
+              Loading...
+            </p>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
+            {[...Array(20)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
+                <div className="h-4 bg-neutral-200 rounded mb-2"></div>
+                <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <BooksContent />
+    </Suspense>
   );
 }
