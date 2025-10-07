@@ -1,5 +1,6 @@
-"use client"
+"use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Icon Menu tự vẽ bằng SVG
 function MenuIcon({ size = 20, className = "" }) {
@@ -43,25 +44,37 @@ function SearchIcon({ size = 20, className = "" }) {
 }
 
 export default function SearchBar({ 
-  placeholder = "Search books...",
+  placeholder = "Search books by title, author, or ISBN...",
   onSearch,
   showMenu = true,
   className = ""
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const router = useRouter();
 
   const handleSearch = () => {
-    if (onSearch) {
-      onSearch(searchQuery);
-    } else {
-      console.log('Tìm kiếm:', searchQuery);
+    if (searchQuery.trim()) {
+      if (onSearch) {
+        // Nếu có prop onSearch, dùng nó
+        onSearch(searchQuery);
+      } else {
+        // Redirect đến trang books với query parameter
+        router.push(`/books?search=${encodeURIComponent(searchQuery)}`);
+      }
     }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch();
+    }
+  };
+
+  const handleClear = () => {
+    setSearchQuery('');
+    if (onSearch) {
+      onSearch('');
     }
   };
 
@@ -93,24 +106,26 @@ export default function SearchBar({
           className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-500 text-sm"
         />
 
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="p-1 hover:bg-gray-300 rounded-full transition-colors mr-1 flex items-center justify-center"
+            aria-label="Clear"
+          >
+            <span className="text-gray-600 text-lg">×</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={handleSearch}
           className="p-1 hover:bg-gray-300 rounded-full transition-colors ml-2 flex items-center justify-center"
-          aria-label="Tìm kiếm"
+          aria-label="Search"
         >
           <SearchIcon size={18} className="text-gray-600" />
         </button>
       </div>
-
-      {/* Demo kết quả tìm kiếm */}
-      {searchQuery && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-10">
-          <p className="text-sm text-gray-600">
-            Đang tìm kiếm: <span className="font-semibold text-gray-800">{searchQuery}</span>
-          </p>
-        </div>
-      )}
     </div>
   );
 }
