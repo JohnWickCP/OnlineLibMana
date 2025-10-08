@@ -2,7 +2,7 @@
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-200 border-t-2 border-gray-300 px-5 py-10">
+    <footer className="bg-[#E9E7E0] border-t-2 border-gray-300 px-5 py-10">
       <div className="max-w-6xl mx-auto text-center">
            
         {/* Copyright */}

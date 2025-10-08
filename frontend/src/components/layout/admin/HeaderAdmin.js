@@ -5,16 +5,16 @@ import { User } from "lucide-react"; // icon user
 
 export default function Home() {
   // Trạng thái login (demo: false = chưa đăng nhập, true = đã đăng nhập)
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   return (
     <div className="min-h-auto font-sans">
       {/* Header */}
       <header className="bg-gray-700 shadow-md">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-8">
           {/* Logo */}
-          <a href="#" className="flex items-center text-white no-underline">
-            <div className="font-bold tracking-widest text-lg leading-tight">
+          <a href="/admin/books" className="flex items-center text-white no-underline">
+            <div className="font-bold tracking-widest text-[30px] leading-tight">
               ELIBRARY
             </div>
           </a>

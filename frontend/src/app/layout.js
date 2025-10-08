@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
   const isAdmin = pathname.startsWith("/admin");
 
   return (
-    <html lang="en">
+    <html>
       <body>
         {isAdmin ? <HeaderAdmin /> : <Header />}
         <main>{children}</main>

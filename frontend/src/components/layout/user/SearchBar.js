@@ -1,39 +1,20 @@
 "use client";
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
-// Icon Menu tự vẽ bằng SVG
-function MenuIcon({ size = 20, className = "" }) {
-  return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-      className={className}
-    >
-      <line x1="3" y1="12" x2="21" y2="12"></line>
-      <line x1="3" y1="6" x2="21" y2="6"></line>
-      <line x1="3" y1="18" x2="21" y2="18"></line>
-    </svg>
-  );
-}
+
 
 // Icon Search tự vẽ bằng SVG
 function SearchIcon({ size = 20, className = "" }) {
   return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
     >
@@ -43,13 +24,13 @@ function SearchIcon({ size = 20, className = "" }) {
   );
 }
 
-export default function SearchBar({ 
+export default function SearchBar({
   placeholder = "Search books by title, author, or ISBN...",
   onSearch,
   showMenu = true,
-  className = ""
+  className = "",
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const router = useRouter();
 
@@ -66,34 +47,28 @@ export default function SearchBar({
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
 
   const handleClear = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     if (onSearch) {
-      onSearch('');
+      onSearch("");
     }
   };
 
   return (
     <div className={`relative ${className}`}>
-      <div 
-        className={`flex items-center bg-gray-100 rounded-full px-4 py-2.5 transition-all ${
-          isFocused ? 'ring-2 ring-green-400 bg-white shadow-md' : 'hover:bg-gray-200'
+      <div
+        className={`flex items-center bg-gray-100 rounded-full px-4 h-10 transition-all ${
+          isFocused
+            ? "ring-2 ring-inset ring-green-400 bg-white shadow-md"
+            : "hover:bg-gray-200"
         }`}
       >
-        {showMenu && (
-          <button 
-            type="button"
-            className="p-1 hover:bg-gray-300 rounded-full transition-colors mr-3 flex items-center justify-center"
-            aria-label="Menu"
-          >
-            <MenuIcon size={18} className="text-gray-600" />
-          </button>
-        )}
+        
 
         <input
           type="text"

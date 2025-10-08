@@ -3,10 +3,8 @@
 
 export default function AdminLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
+      <div>
         <>{children}</>
-      </body>
-    </html>
+      </div>
   );
 }
