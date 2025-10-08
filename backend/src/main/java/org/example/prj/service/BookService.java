@@ -23,6 +23,33 @@ public class BookService {
     @Autowired
     private BookRepositytory bookRepositytory;
 
+    public BookResponse getBook(Long bookId) {
+        Book book = bookRepositytory.getBookById(bookId)
+                .orElseThrow(()->new AppException(ErrorCode.BOOK_NOT_FOUND));
+        return BookResponse.builder()
+                .id(book.getId())
+                .title(book.getTitle())
+                .author(book.getAuthor())
+                .description(book.getDescription())
+                .category(book.getCategory())
+                .coverImage(book.getCoverImage())
+                .fileUrl(book.getFileUrl())
+                .createdAt(book.getCreatedAt())
+                .build();
+    }
+
+    public Page<BookDisplayResponse> getListBooks(Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Book> books = bookRepositytory.findAll(pageable);
+
+        return books.map(book -> new BookDisplayResponse(book.getId(),book.getTitle(),book.getAuthor(),book.getCoverImage()));
+    }
+
+    public Page<BookDisplayResponse> getListBooksByTitle(String title, Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Book> books = bookRepositytory.findByTitle(title,pageable);
+        return books.map(book -> new BookDisplayResponse(book.getId(),book.getTitle(),book.getAuthor(),book.getCoverImage()));
+    }
     
     public BookResponse addBook(BookRequest bookRequest) {
         Book book = Book.builder()
