@@ -1,9 +1,5 @@
-// src/app/page.js
+import { redirect } from 'next/navigation';
 
-export default function Home() {
-  return (
-    <main>
-      <h1>Body</h1>
-    </main>
-  );
+export default function page() {
+  redirect('/books');
 }

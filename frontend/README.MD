@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Hướng dẫn cài đặt dự án Next.js
 
-## Getting Started
+## Yêu cầu hệ thống
 
-First, run the development server:
+- Node.js 18.17+
+- Yarn package manager
+- Git
 
+## Cài đặt nhanh
+
+### 1. Cài đặt công cụ cần thiết
+
+**Windows:**
+- Tải [Node.js](https://nodejs.org/) (phiên bản LTS)
+- Tải [Git](https://git-scm.com/download/win)
+- Cài Yarn: `npm install -g yarn`
+
+**macOS:**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+brew install node yarn git
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Linux:**
+```bash
+# Node.js
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+# Yarn
+npm install -g yarn
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Git
+sudo apt install git
+```
 
-## Learn More
+### 2. Clone và cài đặt dự án
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Clone dự án
+git clone <repository-url>
+cd <project-folder>
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Cài đặt dependencies
+yarn install
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Chạy dự án
 
-## Deploy on Vercel
+```bash
+yarn dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Mở trình duyệt tại: **http://localhost:3000**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Các lệnh thường dùng
+
+```bash
+yarn dev          # Chạy development server
+yarn build        # Build production
+yarn start        # Chạy production server
+yarn lint         # Kiểm tra lỗi code
+yarn add <pkg>    # Thêm package mới
+```
+
+## Cấu trúc dự án
+
+```
+├── app/              # Pages và layouts
+├── public/           # Static files
+├── package.json      # Cấu hình dự án
+└── yarn.lock         # Lock file (commit lên Git)
+```
+
+## Lưu ý quan trọng
+
+⚠️ **Luôn dùng `yarn` thay vì `npm`**
+
+⚠️ **Commit file `yarn.lock` lên Git**
+
+## Xử lý lỗi
+
+**Port 3000 đã dùng:**
+```bash
+# Windows
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# macOS/Linux
+lsof -ti:3000 | xargs kill -9
+```
+
+**Lỗi dependencies:**
+```bash
+rm -rf node_modules yarn.lock
+yarn install
+```
+
+## Deploy
+
+Deploy nhanh lên [Vercel](https://vercel.com):
+1. Kết nối GitHub repository
+2. Click Deploy
+3. Xong!
+
+## Tài liệu
+
+- [Next.js Docs](https://nextjs.org/docs)
+- [Learn Next.js](https://nextjs.org/learn)
+- [Yarn Docs](https://yarnpkg.com/)
+
+---
+

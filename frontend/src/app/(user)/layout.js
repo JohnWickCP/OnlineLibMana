@@ -1,11 +1,12 @@
 // src/app/layout.js
+
 "use client";
 
-export default function AdminLayout({ children }) {
+export default function UserLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <>{children}</>
+        <div>{children}</div>
       </body>
     </html>
   );

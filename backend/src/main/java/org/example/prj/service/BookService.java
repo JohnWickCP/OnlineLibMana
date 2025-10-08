@@ -50,7 +50,7 @@ public class BookService {
         Page<Book> books = bookRepositytory.findByTitle(title,pageable);
         return books.map(book -> new BookDisplayResponse(book.getId(),book.getTitle(),book.getAuthor(),book.getCoverImage()));
     }
-
+    
     public BookResponse addBook(BookRequest bookRequest) {
         Book book = Book.builder()
                 .title(bookRequest.getTitle())
