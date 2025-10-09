@@ -19,9 +19,9 @@ export default function Header() {
 
   return (
     <header className="bg-gray-700 shadow-md">
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-6">
+      <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-10">
         {/* Logo */}
-        <Link href="/" className="flex items-center text-white no-underline">
+        <Link href="/books" className="flex items-center text-white no-underline">
           <div className="font-bold tracking-widest text-[30px] leading-tight">
             ELIBRARY
           </div>

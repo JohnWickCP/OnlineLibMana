@@ -1,8 +1,7 @@
-// src/app/login/page.js
 
 export default function LoginPage() {
   return (
-    <div className="min-h-[80vh bg-stone-200 flex items-center justify-center p-20">
+    <div className="min-h-[80vh bg-[#E9E7E0] flex items-center justify-center p-20">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl w-full flex flex-col md:flex-row">
         {/* Left Panel */}
         <div className="bg-gray-100 p-12 md:w-1/2 flex flex-col justify-center">

@@ -152,7 +152,7 @@ function BooksContent() {
           <main className="flex-1">
             {loading ? (
               // Loading State
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-x-6 gap-y-10">
                 {[...Array(20)].map((_, i) => (
                   <div key={i} className="animate-pulse">
                     <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
@@ -195,7 +195,7 @@ function BooksContent() {
             ) : (
               <>
                 {/* Books Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                   {books.map((book, index) => (
                     <BookCard key={book.key || book.seed?.[0] || index} book={book} />
                   ))}
@@ -225,7 +225,7 @@ export default function BooksPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#E9E7E0]">
-        <div className="bg-white border-b border-neutral-200">
+        <div className="bg-white border-b border-neutral-200 ">
           <div className="container mx-auto px-4 py-8">
             <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
               Browse Standard Ebooks
