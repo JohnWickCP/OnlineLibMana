@@ -4,12 +4,18 @@ import { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { booksAPI } from "@/lib/api";
+import { ChevronDown, ExternalLink, Star } from "lucide-react";
 
 function BookDetailContent() {
   const params = useParams();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Thêm state cho dropdown + rating
+  const [readingList, setReadingList] = useState("Want to Read");
+  const [openList, setOpenList] = useState(false);
+  const [rating, setRating] = useState(0);
 
   useEffect(() => {
     fetchBookDetail();
@@ -18,11 +24,7 @@ function BookDetailContent() {
   const fetchBookDetail = async () => {
     try {
       setLoading(true);
-      console.log("Fetching book:", params.id);
-
-      // Lấy thông tin sách
       const response = await booksAPI.getBookById(params.id);
-      console.log("Book detail:", response);
       setBook(response);
     } catch (error) {
       console.error("Error fetching book:", error);
@@ -55,7 +57,7 @@ function BookDetailContent() {
     );
   }
 
-  // Xử lý dữ liệu từ Open Library API
+  // Xử lý dữ liệu từ API
   const title = book.title || "Untitled";
   const authors =
     book.authors?.map((a) => a.author?.key || a.key).join(", ") ||
@@ -104,7 +106,7 @@ function BookDetailContent() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-8">
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Book Cover */}
+            {/* Book Cover + Action Buttons */}
             <div className="flex-shrink-0">
               <div className="w-64">
                 <img
@@ -114,56 +116,86 @@ function BookDetailContent() {
                 />
 
                 {/* Action Buttons */}
-                <div className="mt-6 space-y-3">
+                <div className="mt-6 flex flex-col items-center space-y-3">
+                  {/* Read Button */}
                   <Link
                     href={`/books/${params.id}/read`}
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold block text-center"
+                    className="w-full bg-blue-600 text-white py-2 rounded-md font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition"
                   >
                     Read
+                    <ExternalLink size={16} />
                   </Link>
-                  <button className="w-full border-2 border-neutral-300 text-neutral-700 py-2 rounded-lg hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+
+                  {/* Dropdown */}
+                  <div className="relative w-full">
+                    <button
+                      onClick={() => setOpenList((prev) => !prev)}
+                      className="w-full border border-neutral-300 bg-neutral-100 text-neutral-700 py-2 rounded-md flex items-center justify-between px-3 hover:bg-neutral-200 transition"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                      />
-                    </svg>
-                    Want to Read
-                  </button>
-                  <button className="w-full text-neutral-600 hover:text-neutral-900 transition-colors">
-                    ★ Rate this book
-                  </button>
+                      {readingList}
+                      <ChevronDown size={16} />
+                    </button>
+
+                    {openList && (
+                      <div className="absolute top-full left-0 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-md z-10">
+                        {["Want to Read", "Reading", "Read", "Favorite"].map(
+                          (option) => (
+                            <button
+                              key={option}
+                              onClick={() => {
+                                setReadingList(option);
+                                setOpenList(false);
+                              }}
+                              className={`block w-full text-left px-3 py-2 text-sm hover:bg-neutral-100 ${
+                                option === readingList
+                                  ? "font-semibold text-blue-600"
+                                  : ""
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rating Stars */}
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <button
+                        key={i}
+                        onClick={() => setRating(i)}
+                        className="text-gray-400 hover:text-yellow-400 transition"
+                      >
+                        <Star
+                          size={22}
+                          fill={i <= rating ? "#facc15" : "none"}
+                          stroke={i <= rating ? "#facc15" : "currentColor"}
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Book Details */}
             <div className="flex-1">
-              {/* Badge */}
               <div className="mb-4">
                 <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
                   Overview
                 </span>
               </div>
 
-              {/* Title */}
               <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
                 {title}
               </h1>
 
-              {/* Subtitle */}
               <p className="text-lg text-neutral-600 mb-4">
                 {book.subtitle || ""}
               </p>
 
-              {/* Author */}
               <p className="text-lg mb-4">
                 by{" "}
                 <span className="text-blue-600 hover:underline cursor-pointer">
@@ -171,7 +203,6 @@ function BookDetailContent() {
                 </span>
               </p>
 
-              {/* Rating & Stats */}
               <div className="flex items-center gap-6 mb-6 text-sm text-neutral-600">
                 <div className="flex items-center gap-1">
                   <span className="text-yellow-500">★★★☆☆</span>
@@ -182,7 +213,6 @@ function BookDetailContent() {
                 <div>· 52 Have read</div>
               </div>
 
-              {/* Description */}
               <div className="mb-6">
                 <p className="text-neutral-700 leading-relaxed">
                   {description.length > 400
@@ -222,7 +252,6 @@ function BookDetailContent() {
                 </div>
               </div>
 
-              {/* Subjects/Tags */}
               {subjects.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-sm font-semibold text-neutral-700 mb-3">
