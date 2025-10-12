@@ -7,6 +7,7 @@ import Footer from "@/components/layout/user/Footer";
 import HeaderAdmin from "@/components/layout/admin/HeaderAdmin";
 
 import "./globals.css";
+//import { AuthProvider } from "@/components/provider/AuthProvider";
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();
@@ -14,10 +15,10 @@ export default function RootLayout({ children }) {
 
   return (
     <html>
-      <body>
-        {isAdmin ? <HeaderAdmin /> : <Header />}
-        <main>{children}</main>
-        <Footer />
+      <body className="inter.className">
+          {isAdmin ? <HeaderAdmin /> : <Header />}
+          <main>{children}</main>
+          <Footer />
       </body>
     </html>
   );
