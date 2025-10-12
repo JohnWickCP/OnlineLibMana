@@ -347,25 +347,4 @@ export const authorsAPI = {
   },
 };
 
-// Subjects phổ biến (có thể sử dụng để lọc sách)
-export const POPULAR_SUBJECTS = [
-  'fiction',
-  'science_fiction',
-  'fantasy',
-  'mystery',
-  'romance',
-  'thriller',
-  'horror',
-  'biography',
-  'history',
-  'science',
-  'philosophy',
-  'poetry',
-  'drama',
-  'children',
-  'young_adult',
-  'bestseller',
-  'classic',
-];
-
 export default api;
