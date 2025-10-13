@@ -20,6 +20,7 @@ export default function BooksList({
   enableSort = false,
   sortOptions = [],
   className = '',
+  showHeader = true, // Thêm prop để control việc hiển thị header
 }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,63 +107,65 @@ export default function BooksList({
 
   return (
     <div className={`min-h-screen bg-[#E9E7E0] ${className}`}>
-      {/* Header Section */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
-            {title}
-          </h1>
-          {description && (
-            <p className="text-neutral-600 mb-6">{description}</p>
-          )}
-          
-          {/* Filters & Sort */}
-          {(showFilters || enableSort) && (
-            <div className="flex flex-wrap gap-4 items-center">
-              {/* Filters */}
-              {showFilters && filterOptions.length > 0 && (
-                <div className="flex gap-2">
-                  {filterOptions.map(option => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleFilterChange({ [option.key]: option.value })}
-                      className={`px-4 py-2 rounded-md transition-colors ${
-                        filters[option.key] === option.value
-                          ? 'bg-neutral-900 text-white'
-                          : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Sort */}
-              {enableSort && sortOptions.length > 0 && (
-                <select
-                  value={filters.sort}
-                  onChange={(e) => handleFilterChange({ sort: e.target.value })}
-                  className="px-4 py-2 border border-neutral-300 rounded-md bg-white"
-                >
-                  {sortOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
-          
-          {/* Results Count */}
-          {!loading && (
-            <p className="mt-4 text-sm text-neutral-600">
-              Showing {books.length} of {pagination.totalItems} books
-            </p>
-          )}
+      {/* Header Section - Chỉ hiển thị khi showHeader = true */}
+      {showHeader && (
+        <div className="bg-white border-b border-neutral-200">
+          <div className="container mx-auto px-4 py-8">
+            <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
+              {title}
+            </h1>
+            {description && (
+              <p className="text-neutral-600 mb-6">{description}</p>
+            )}
+            
+            {/* Filters & Sort */}
+            {(showFilters || enableSort) && (
+              <div className="flex flex-wrap gap-4 items-center">
+                {/* Filters */}
+                {showFilters && filterOptions.length > 0 && (
+                  <div className="flex gap-2">
+                    {filterOptions.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleFilterChange({ [option.key]: option.value })}
+                        className={`px-4 py-2 rounded-md transition-colors ${
+                          filters[option.key] === option.value
+                            ? 'bg-neutral-900 text-white'
+                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Sort */}
+                {enableSort && sortOptions.length > 0 && (
+                  <select
+                    value={filters.sort}
+                    onChange={(e) => handleFilterChange({ sort: e.target.value })}
+                    className="px-4 py-2 border border-neutral-300 rounded-md bg-white"
+                  >
+                    {sortOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+            
+            {/* Results Count */}
+            {!loading && (
+              <p className="mt-4 text-sm text-neutral-600">
+                Showing {books.length} of {pagination.totalItems} books
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">

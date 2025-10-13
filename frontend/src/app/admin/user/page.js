@@ -19,7 +19,7 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e8e4dc] to-[#d4cfc7] p-8">
+    <div className="min-h-[80vh] bg-gradient-to-br from-[#e8e4dc] to-[#d4cfc7] p-8">
       <div className="max-w-7xl mx-auto bg-white shadow-md rounded-xl p-10">
         {/* Stats Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
