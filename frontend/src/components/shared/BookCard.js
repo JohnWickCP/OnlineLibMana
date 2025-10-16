@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 export default function BookCard({ book }) {
@@ -27,10 +28,13 @@ export default function BookCard({ book }) {
       <div className="bg-[#E9E7E0] w-[200px] mx-auto">
         {/* Book Cover */}
         <div className="relative aspect-[2/3] overflow-hidden">
-          <img
+          {/* ✅ Sửa: Đổi img thành Image */}
+          <Image
             src={coverUrl}
             alt={title}
-            className="w-full h-full border rounded-lg border-black transition-transform duration-300 group-hover:scale-105"
+            fill
+            className="w-full h-full border rounded-lg border-black transition-transform duration-300 group-hover:scale-105 object-cover"
+            sizes="200px"
             onError={(e) => {
               e.target.src =
                 "https://via.placeholder.com/300x450/e5e7eb/6b7280?text=No+Cover";
@@ -50,7 +54,7 @@ export default function BookCard({ book }) {
         <div className="p-4 text-center">
           <h3 className="font-serif text-[1rem] font-semibold text-neutral-900 leading-snug mb-1 group-hover:text-gray-700 transition-colors">
             {title}
-          </h3>
+          </h3> 
           <p className="text-sm text-neutral-600 italic">{authors}</p>
           {book.first_publish_year && (
             <p className="text-xs text-neutral-500 mt-1">

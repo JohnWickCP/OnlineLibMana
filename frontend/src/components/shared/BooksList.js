@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import BookCard from '@/components/shared/BookCard';
 import Pagination from '@/components/shared/Pagination';
 import { booksAPI } from '@/lib/api';
@@ -20,7 +20,7 @@ export default function BooksList({
   enableSort = false,
   sortOptions = [],
   className = '',
-  showHeader = true, // Thêm prop để control việc hiển thị header
+  showHeader = true,
 }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,8 @@ export default function BooksList({
     sort: sortOptions[0]?.value || 'date_desc',
   });
 
-  const fetchBooks = async () => {
+  // ✅ Sửa: Wrap fetchBooks với useCallback
+  const fetchBooks = useCallback(async () => {
     console.log('🚀 fetchBooks started');
     try {
       setLoading(true);
@@ -89,11 +90,11 @@ export default function BooksList({
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchFunction, fetchParams, itemsPerPage, pagination.currentPage, enableSort, filters.sort]);
 
   useEffect(() => {
     fetchBooks();
-  }, [pagination.currentPage, filters.sort, fetchParams]);
+  }, [fetchBooks]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -107,7 +108,7 @@ export default function BooksList({
 
   return (
     <div className={`min-h-screen bg-[#E9E7E0] ${className}`}>
-      {/* Header Section - Chỉ hiển thị khi showHeader = true */}
+      {/* Header Section */}
       {showHeader && (
         <div className="bg-white border-b border-neutral-200">
           <div className="container mx-auto px-4 py-8">
