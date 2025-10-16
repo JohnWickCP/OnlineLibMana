@@ -18,8 +18,10 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@typescript-eslint/parser": "^8.46.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^5.9.3"
   }
 }

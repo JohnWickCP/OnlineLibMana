@@ -119,63 +119,24 @@ function BookDetailContent() {
                 <div className="mt-6 flex flex-col items-center space-y-3">
                   {/* Read Button */}
                   <Link
-                    href={`/books/${params.id}/read`}
+                    href='#'
                     className="w-full bg-blue-600 text-white py-2 rounded-md font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition"
                   >
-                    Read
-                    <ExternalLink size={16} />
+                    Edit
                   </Link>
 
                   {/* Dropdown */}
                   <div className="relative w-full">
                     <button
-                      onClick={() => setOpenList((prev) => !prev)}
-                      className="w-full border border-neutral-300 bg-neutral-100 text-neutral-700 py-2 rounded-md flex items-center justify-between px-3 hover:bg-neutral-200 transition"
+                      className="pointer-cursor w-full border border-neutral-300 bg-neutral-100 text-neutral-700 py-2 rounded-md flex items-center justify-between px-3 hover:bg-neutral-200 transition"
                     >
-                      {readingList}
-                      <ChevronDown size={16} />
+                      Delete
                     </button>
 
-                    {openList && (
-                      <div className="absolute top-full left-0 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-md z-10">
-                        {["Want to Read", "Reading", "Read", "Favorite"].map(
-                          (option) => (
-                            <button
-                              key={option}
-                              onClick={() => {
-                                setReadingList(option);
-                                setOpenList(false);
-                              }}
-                              className={`block w-full text-left px-3 py-2 text-sm hover:bg-neutral-100 ${
-                                option === readingList
-                                  ? "font-semibold text-blue-600"
-                                  : ""
-                              }`}
-                            >
-                              {option}
-                            </button>
-                          )
-                        )}
-                      </div>
-                    )}
+                    
                   </div>
 
-                  {/* Rating Stars */}
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <button
-                        key={i}
-                        onClick={() => setRating(i)}
-                        className="text-gray-400 hover:text-yellow-400 transition"
-                      >
-                        <Star
-                          size={22}
-                          fill={i <= rating ? "#facc15" : "none"}
-                          stroke={i <= rating ? "#facc15" : "currentColor"}
-                        />
-                      </button>
-                    ))}
-                  </div>
+                  
                 </div>
               </div>
             </div>
