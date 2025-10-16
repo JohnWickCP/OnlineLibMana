@@ -1,10 +1,9 @@
 "use client";
 import { useState } from "react";
-import { User } from "lucide-react"; // icon user
-
+import { User } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
-  // Trạng thái login (demo: false = chưa đăng nhập, true = đã đăng nhập)
   const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   return (
@@ -13,43 +12,41 @@ export default function Home() {
       <header className="bg-gray-700 shadow-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-8">
           {/* Logo */}
-          <a href="/admin/books" className="flex items-center text-white no-underline">
+          <Link href="/admin/books" className="flex items-center text-white no-underline">
             <div className="font-bold tracking-widest text-[30px] leading-tight">
               ELIBRARY
             </div>
-          </a>
+          </Link>
 
           {/* Navigation */}
           <nav>
             <ul className="flex items-center space-x-6 text-white">
               <li>
-                <a
-                  href="#"
+                <Link
+                  href="/admin/books"
                   className="uppercase hover:text-green-400 text-sm font-medium text-green-400"
                 >
                   BOOKS
-                </a>
+                </Link>
               </li>
 
               {!isLoggedIn ? (
                 <>
                   <li>
-                    <a
-                      href="#"
+                    <Link
+                      href="/admin/users"
                       className="uppercase hover:text-green-400 text-sm font-medium"
-                      onClick={() => setIsLoggedIn(true)} // Demo login
                     >
                       Users
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a
-                      href="#"
+                    <Link
+                      href="/login"
                       className="px-5 py-2 rounded-full bg-gray-200 text-black font-medium hover:bg-gray-300 transition"
-                      onClick={() => setIsLoggedIn(true)} // Demo sign in
                     >
                       Sign In
-                    </a>
+                    </Link>
                   </li>
                 </>
               ) : (
