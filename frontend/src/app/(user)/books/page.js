@@ -7,7 +7,6 @@ import Pagination from "@/components/shared/Pagination";
 import { booksAPI } from "@/lib/api";
 import Link from "next/link";
 
-
 function BooksContent() {
   const searchParams = useSearchParams();
   const [books, setBooks] = useState([]);
@@ -113,39 +112,42 @@ function BooksContent() {
   const searchQuery = searchParams.get("search");
 
   return (
-    <div className="min-h-screen bg-[#E9E7E0]">
+    <div className="min-h-screen pt-6 bg-[#E9E7E0]">
       {/* Header Section */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
-            {searchQuery
-              ? `Search Results for "${searchQuery}"`
-              : "Browse Standard Ebooks"}
-          </h1>
-          <p className="text-neutral-600 mb-6">
-            {searchQuery
-              ? `Found ${pagination.totalItems} books matching your search`
-              : "Free and liberated ebooks, carefully produced for the true book lover"}
-          </p>
+      <div className="bg-[#F9F8F4] border border-dotted border-neutral-400 rounded-sm relative mx-auto max-w-7xl mt-[20px] mb-8">
 
-          {/* Results Count */}
-          {!loading && (
-            <div className="flex items-center justify-between">
-              <p className="mt-4 text-sm text-neutral-600">
-                Showing {books.length} of {pagination.totalItems} books
-              </p>
-              {searchQuery && (
-                <Link
-                  href="/books"
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Clear search
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
+  <div className="text-center px-8 py-10 text-neutral-800">
+    <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
+      {searchQuery
+        ? `Search Results for "${searchQuery}"`
+        : "Browse Standard Ebooks"}
+    </h1>
+
+    <p className="text-neutral-600 mb-6">
+      {searchQuery
+        ? `Found ${pagination.totalItems} books matching your search`
+        : "Free and liberated ebooks, carefully produced for the true book lover"}
+    </p>
+
+    {/* Results Count */}
+    {!loading && (
+      <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-neutral-600">
+        <p className="mt-2">
+          Showing {books.length} of {pagination.totalItems} books
+        </p>
+        {searchQuery && (
+          <Link
+            href="/books"
+            className="mt-2 text-blue-700 underline hover:text-blue-900"
+          >
+            Clear search
+          </Link>
+        )}
       </div>
+    )}
+  </div>
+</div>
+
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
