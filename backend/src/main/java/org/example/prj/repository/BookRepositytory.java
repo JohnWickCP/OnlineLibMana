@@ -13,6 +13,6 @@ import java.util.Optional;
 public interface BookRepositytory extends JpaRepository<Book, Long> {
     Optional<Book> getBookById(Long id);
 
-    @Query("SELECT b FROM Book b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    Page<Book> findByTitle(String title, Pageable pageable);
+    @Query("SELECT b FROM Book b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%'))")
+    Page<Book> findByTitle(@Param("title") String title, Pageable pageable);
 }
