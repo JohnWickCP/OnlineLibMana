@@ -20,8 +20,25 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-    private final String[] PUBLIC_ENDPOINTS = { "/api/auth/register","/home/{id}","/home/login",
-            "/home/logout","/book/{id}"
+    private final String[] PUBLIC_ENDPOINTS = {
+            "/api/auth/register",
+            "/home/{id}",
+            "/home/login",
+            "/home/logout",
+            "/book/{id}",
+            "/magic/login",
+            "/api/auth/logout",
+            "/auth/login",
+            "/book//{title}",
+            "book/listbooks",
+            "book//rating/{bookId}",
+
+            // ✅ Thêm whitelist cho Swagger
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/swagger-ui.html",
+            "/webjars/**"
     };
 
     @Autowired

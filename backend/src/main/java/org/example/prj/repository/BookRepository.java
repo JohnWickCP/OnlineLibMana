@@ -17,9 +17,4 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     @Query("SELECT b FROM Book b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%'))")
     Page<Book> findByTitle(@Param("title") String title, Pageable pageable);
-
-
-//    Page<Book> findById(Long id, Pageable pageable);
-
-//    List<Book> findByStatus(String status);
 }
