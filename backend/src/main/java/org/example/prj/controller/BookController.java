@@ -21,7 +21,7 @@ public class BookController {
     }
 
 //    Display book when click book(public)
-    @GetMapping("/{id}")
+    @GetMapping("/id/{id}")
     public ApiResponse<BookResponse> getBook(@PathVariable Long id) {
         return ApiResponse.<BookResponse>builder()
                 .result(bookService.getBook(id))
@@ -29,7 +29,7 @@ public class BookController {
     }
 
 //    Get list book(public)
-    @GetMapping
+    @GetMapping("/listbooks")
     public ApiResponse<Page<BookDisplayResponse>> getBooks(@RequestParam(defaultValue = "0") Integer page,
                                                            @RequestParam(defaultValue = "20") Integer size){
         return ApiResponse.<Page<BookDisplayResponse>>builder()
@@ -71,5 +71,13 @@ public class BookController {
     @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public void deleteBook(@PathVariable Long id) {
         bookService.deleteBook(id);
+    }
+
+//    Display rating(public)
+    @GetMapping("/rating/{bookId}")
+    public ApiResponse<Double> displayRating(@PathVariable Long bookId){
+        return ApiResponse.<Double>builder()
+                .result(bookService.displayRating(bookId))
+                .build();
     }
 }
