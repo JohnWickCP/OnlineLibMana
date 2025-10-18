@@ -22,16 +22,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
     private final String[] PUBLIC_ENDPOINTS = {
             "/api/auth/register",
+            "/api/auth/login",
             "/home/{id}",
+            "/home/listUser",
             "/home/login",
             "/home/logout",
-            "/book/{id}",
+            "book/rating/{bookId}",
+            "/book/id/{id}",
             "/magic/login",
             "/api/auth/logout",
             "/auth/login",
-            "/book//{title}",
+            "/book/{title}",
             "book/listbooks",
-            "book//rating/{bookId}",
 
             // ✅ Thêm whitelist cho Swagger
             "/swagger-ui/**",
@@ -101,11 +103,11 @@ public class SecurityConfig {
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter scopesConverter = new JwtGrantedAuthoritiesConverter();
-        scopesConverter.setAuthorityPrefix("");
+        scopesConverter.setAuthorityPrefix("ROLE_");
         scopesConverter.setAuthoritiesClaimName("SCOPE");
 
         JwtGrantedAuthoritiesConverter specialityConverter = new JwtGrantedAuthoritiesConverter();
-        specialityConverter.setAuthorityPrefix("");
+        specialityConverter.setAuthorityPrefix("SPECIALITY_");
         specialityConverter.setAuthoritiesClaimName("SPECIALITY");
 
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
