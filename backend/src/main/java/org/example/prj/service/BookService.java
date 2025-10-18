@@ -5,13 +5,15 @@ import org.example.prj.DTO.Request.BookRequest;
 import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
 import org.example.prj.entity.Book;
+import org.example.prj.entity.Review;
 import org.example.prj.exception.AppException;
 import org.example.prj.exception.ErrorCode;
-import org.example.prj.repository.BookRepositytory;
+import org.example.prj.repository.BookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,10 +23,10 @@ import java.util.List;
 @Slf4j
 public class BookService {
     @Autowired
-    private BookRepositytory bookRepositytory;
+    private BookRepository bookRepository;
 
     public BookResponse getBook(Long bookId) {
-        Book book = bookRepositytory.getBookById(bookId)
+        Book book = bookRepository.getBookById(bookId)
                 .orElseThrow(()->new AppException(ErrorCode.BOOK_NOT_FOUND));
         return BookResponse.builder()
                 .id(book.getId())
@@ -40,17 +42,20 @@ public class BookService {
 
     public Page<BookDisplayResponse> getListBooks(Integer page, Integer size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Book> books = bookRepositytory.findAll(pageable);
+        Page<Book> books = bookRepository.findAll(pageable);
 
-        return books.map(book -> new BookDisplayResponse(book.getId(),book.getTitle(),book.getAuthor(),book.getCoverImage()));
+        return books.map(book -> new BookDisplayResponse(book.getId(),book.getTitle(),book.getAuthor(),
+                book.getDescription(),book.getCoverImage()));
     }
 
     public Page<BookDisplayResponse> getListBooksByTitle(String title, Integer page, Integer size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Book> books = bookRepositytory.findByTitle(title,pageable);
-        return books.map(book -> new BookDisplayResponse(book.getId(),book.getTitle(),book.getAuthor(),book.getCoverImage()));
+        Page<Book> books = bookRepository.findByTitle(title,pageable);
+        return books.map(book -> new BookDisplayResponse(book.getId(),book.getTitle(),book.getAuthor(),
+                book.getDescription(),book.getCoverImage()));
     }
-    
+
+    @PreAuthorize("hasRole('ADMIN')")
     public BookResponse addBook(BookRequest bookRequest) {
         Book book = Book.builder()
                 .title(bookRequest.getTitle())
@@ -61,7 +66,7 @@ public class BookService {
                 .fileUrl(bookRequest.getFileUrl())
                 .createdAt(bookRequest.getCreatedAt())
                 .build();
-        bookRepositytory.save(book);
+        bookRepository.save(book);
         return BookResponse.builder()
                 .title(bookRequest.getTitle())
                 .author(bookRequest.getAuthor())
@@ -73,19 +78,21 @@ public class BookService {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public BookResponse editBook(BookRequest bookRequest,Long  bookId) {
-        Book book = bookRepositytory.getBookById(bookId)
-                .orElseThrow(()->new AppException(ErrorCode.BOOK_NOT_FOUND));
-        book = Book.builder()
-                .title(bookRequest.getTitle())
-                .author(bookRequest.getAuthor())
-                .description(bookRequest.getDescription())
-                .category(bookRequest.getCategory())
-                .coverImage(bookRequest.getCoverImage())
-                .fileUrl(bookRequest.getFileUrl())
-                .createdAt(bookRequest.getCreatedAt())
-                .build();
-        bookRepositytory.save(book);
+        Book book = bookRepository.getBookById(bookId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
+
+        // cập nhật các thuộc tính
+        book.setTitle(bookRequest.getTitle());
+        book.setAuthor(bookRequest.getAuthor());
+        book.setDescription(bookRequest.getDescription());
+        book.setCategory(bookRequest.getCategory());
+        book.setCoverImage(bookRequest.getCoverImage());
+        book.setFileUrl(bookRequest.getFileUrl());
+        book.setCreatedAt(bookRequest.getCreatedAt());
+
+        bookRepository.save(book);
 
         return BookResponse.builder()
                 .id(book.getId())
@@ -99,11 +106,30 @@ public class BookService {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteBook(Long bookId) {
-        bookRepositytory.deleteById(bookId);
+        bookRepository.deleteById(bookId);
         log.info("Delete Successfull");
     }
 
+//    @PreAuthorize("isAuthenticated()")
+    public Double displayRating(Long id) {
+        return bookRepository.findById(id)
+                .map(book -> {
+                    List<Review> reviews = book.getReviews();
+                    if (reviews == null || reviews.isEmpty()) {
+                        return 0.0;
+                    }
+
+                    double average = reviews.stream()
+                            .mapToDouble(Review::getRating)
+                            .average()
+                            .orElse(0.0);
+
+                    return average;
+                })
+                .orElse(0.0);
+    }
 
 }
 
