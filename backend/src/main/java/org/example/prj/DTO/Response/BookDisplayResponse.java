@@ -10,7 +10,8 @@ import lombok.*;
 @AllArgsConstructor
 public class BookDisplayResponse {
     private Long id;
+    private String title;
     private String author;
-    private String category;
+    private String decription;
     private String coverImage;
 }
