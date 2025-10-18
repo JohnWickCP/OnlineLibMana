@@ -1,5 +1,6 @@
 package org.example.prj.service;
 
+import jakarta.transaction.Transactional;
 import org.example.prj.DTO.Request.TilteFolder;
 import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
@@ -12,9 +13,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -31,9 +34,16 @@ public class UserService {
     private FavouriteRepository favouriteRepository;
     @Autowired
     private BookshelfItemRepository bookshelfItemRepository;
+    @Autowired
+    private BookshelfRepository bookshelfRepository;
 
     @PreAuthorize("isAuthenticated()")
-    public String addReviewBook(String username, Long bookId, double point) {
+    public String addReviewBook(Long bookId, double point) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("________________________________________________________________________");
+        System.out.println("Authorities: " + auth.getAuthorities());
+
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Book book = bookRepository.findById(bookId)
@@ -62,18 +72,20 @@ public class UserService {
         return "Feedback successfully! Rating: " + point;
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
     public String addFBFolder(TilteFolder tilteFolder) {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).get();
         FavouriteBooks favouriteBooks = new FavouriteBooks();
         favouriteBooks.setTitle(tilteFolder.getTitle());
+        favouriteBooks.setUser(user);
+//        favouriteBooks.setBook(book);
         user.getFavouriteBooks().add(favouriteBooks);
         favouriteRepository.save(favouriteBooks);
         return "Create Successful:" + tilteFolder.getTitle();
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
     public String addFB(Long bookId,Long listId){
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).get();
@@ -90,7 +102,7 @@ public class UserService {
         return "Add Successful:" + book.getTitle();
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
     public List<BookDisplayResponse> getFB(Long Id, Integer page, Integer size) {
         FavouriteBooks favourite = favouriteRepository.findById(Id)
                 .orElseThrow(() -> new RuntimeException("Favourite not found"));
@@ -139,44 +151,69 @@ public class UserService {
 //                .toList();
     }
 
-    @PreAuthorize("hasRole('USER')")
-    public String editStatusBook(Long bookId, String status) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
+    @Transactional
+    public String addBookByStatus(Long bookId, String status) {
+        // 🔹 Lấy user đăng nhập
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // 🔹 Lấy book theo id
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found"));
 
+        // 🔹 Kiểm tra bookshelf của user
         Bookshelf bookshelf = user.getBookshelf();
         if (bookshelf == null) {
-            throw new RuntimeException("Bookshelf not found for user");
+            // ✅ user chưa có bookshelf → tạo mới
+            bookshelf = new Bookshelf();
+            bookshelf.setUser(user);
+            user.setBookshelf(bookshelf);
+
+            // ✅ Lưu bookshelf để có ID (chưa có item)
+            bookshelf.setItems(new ArrayList<>());
+            bookshelf = bookshelfRepository.save(bookshelf);
         }
 
-        Optional<BookshelfItem> existingItemOpt = bookshelf.getItems().stream()
+        // 🔹 Lấy danh sách item hiện tại (tránh null)
+        List<BookshelfItem> bookshelfItems = bookshelf.getItems();
+        if (bookshelfItems == null) {
+            bookshelfItems = new ArrayList<>();
+            bookshelf.setItems(bookshelfItems);
+        }
+
+        // 🔹 Kiểm tra xem sách này đã có trong bookshelf chưa
+        Optional<BookshelfItem> existingItemOpt = bookshelfItems.stream()
                 .filter(item -> item.getBook().getId().equals(bookId))
                 .findFirst();
 
-        BookshelfItem bookshelfItem;
-
         if (existingItemOpt.isPresent()) {
-            bookshelfItem = existingItemOpt.get();
-            bookshelfItem.setStatus(StatusBook.valueOf(status));
+            // ✅ Có rồi → cập nhật status
+            BookshelfItem existingItem = existingItemOpt.get();
+            existingItem.setStatus(StatusBook.valueOf(status));
+            bookshelfItemRepository.save(existingItem);
+
+            return "✅ Updated status of book: " + book.getTitle();
         } else {
-            bookshelfItem = new BookshelfItem();
-            bookshelfItem.setBook(book);
-            bookshelfItem.setBookshelf(bookshelf);
-            bookshelfItem.setStatus(StatusBook.valueOf(status));
+            // ✅ Chưa có → thêm mới
+            BookshelfItem newItem = new BookshelfItem();
+            newItem.setBook(book);
+            newItem.setStatus(StatusBook.valueOf(status));
+            newItem.setBookshelf(bookshelf);
 
-            bookshelf.getItems().add(bookshelfItem);
+            // 🔹 Lưu item
+            bookshelfItemRepository.save(newItem);
+
+            // 🔹 Thêm vào list và cập nhật bookshelf
+            bookshelfItems.add(newItem);
+            bookshelfRepository.save(bookshelf);
+
+            return "✅ Added new book to bookshelf: " + book.getTitle();
         }
-
-        bookshelfItemRepository.save(bookshelfItem);
-
-        return "✅ Update status successful for book: " + book.getTitle();
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
     public Page<BookResponse> getBooksDependOnStatus(String status, Integer page, Integer size) {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
