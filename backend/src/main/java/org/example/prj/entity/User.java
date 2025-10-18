@@ -29,8 +29,11 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Review> reviews;
 
-    @OneToMany(mappedBy = "user")
-    private List<Bookshelf> bookshelves;
+    @OneToOne(mappedBy = "user")
+    private Bookshelf bookshelf;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FavouriteBooks> favouriteBooks;
 
     // getters and setters
 }
