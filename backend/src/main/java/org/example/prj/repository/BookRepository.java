@@ -8,12 +8,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+
 import java.util.Optional;
 
 @Repository
-public interface BookRepositytory extends JpaRepository<Book, Long> {
+public interface BookRepository extends JpaRepository<Book, Long> {
     Optional<Book> getBookById(Long id);
 
-    @Query("SELECT b FROM Book b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    Page<Book> findByTitle(String title, Pageable pageable);
+    @Query("SELECT b FROM Book b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%'))")
+    Page<Book> findByTitle(@Param("title") String title, Pageable pageable);
+
+
+//    Page<Book> findById(Long id, Pageable pageable);
+
+//    List<Book> findByStatus(String status);
 }
