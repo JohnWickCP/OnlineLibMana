@@ -3,6 +3,9 @@ package org.example.prj.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Entity
@@ -14,21 +17,13 @@ public class Bookshelf {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private Status status;
-
-    @ManyToOne
-    @JoinColumn(name = "userId", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "bookId", nullable = false)
-    private Book book;
-
-    // Enum cho status
-    public enum Status {
-        READING, COMPLETED, FAVORITE
-    }
+    // Một Bookshelf có nhiều sách
+    @OneToMany(mappedBy = "bookshelf", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BookshelfItem> items = new ArrayList<>();
 
     // getters and setters
 }
