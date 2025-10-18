@@ -6,14 +6,17 @@ import org.example.prj.repository.BookRepository;
 import org.example.prj.repository.UserRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
 @Service
 public class AdminService {
+    @Autowired
     private UserRepository userRepository;
+    @Autowired
     private BookRepository bookRepository;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
     public Dashboard getDashboard(){
         Dashboard dashboard = new Dashboard();
         dashboard.setTotalBooks(bookRepository.findAll().size());
