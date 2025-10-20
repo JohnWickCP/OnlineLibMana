@@ -1,9 +1,17 @@
+/**
+ * components/shared/BooksList.js
+ * Component reusable để hiển thị danh sách sách
+ * - Hỗ trợ pagination
+ * - Hỗ trợ filters và sort
+ * - Loading và empty states
+ * - Tương thích với backend API
+ */
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import BookCard from '@/components/shared/BookCard';
 import Pagination from '@/components/shared/Pagination';
-import { booksAPI } from '@/lib/api';
 
 export default function BooksList({
   fetchFunction,
@@ -33,9 +41,9 @@ export default function BooksList({
     sort: sortOptions[0]?.value || 'date_desc',
   });
 
-  // ✅ Sửa: Wrap fetchBooks với useCallback
+  // Fetch books từ backend
   const fetchBooks = useCallback(async () => {
-    console.log('🚀 fetchBooks started');
+    console.log('🚀 BooksList fetchBooks started');
     try {
       setLoading(true);
       
@@ -52,41 +60,61 @@ export default function BooksList({
       const response = await fetchFunction(params);
       console.log('📥 API response:', response);
       
-      // Handle different response formats
+      // ===== XỬ LÝ RESPONSE TỪ BACKEND =====
       let booksData = [];
       let totalCount = 0;
       
-      if (response.docs) {
-        // Search API format
+      // Format 1: { code: 1000, result: { content: [], totalElements: 0 } }
+      if (response.code === 1000 && response.result) {
+        booksData = response.result.content || response.result || [];
+        totalCount = response.result.totalElements || booksData.length;
+      }
+      // Format 2: { data: [], total: 0 }
+      else if (response.data) {
+        booksData = Array.isArray(response.data) ? response.data : [response.data];
+        totalCount = response.total || booksData.length;
+      }
+      // Format 3: Array trực tiếp []
+      else if (Array.isArray(response)) {
+        booksData = response;
+        totalCount = response.length;
+      }
+      // Format 4: OpenLibrary format
+      else if (response.docs) {
         booksData = response.docs;
         totalCount = response.numFound || booksData.length;
       } else if (response.works) {
-        // Works API format
         booksData = response.works;
         totalCount = response.work_count || booksData.length;
-      } else if (Array.isArray(response)) {
-        // Direct array format
-        booksData = response;
-        totalCount = response.length;
-      } else if (response.data) {
-        // Backend API format
-        booksData = response.data;
-        totalCount = response.total || booksData.length;
       }
       
-      console.log('📚 Books data:', booksData);
+      console.log('📚 Processed books:', {
+        count: booksData.length,
+        total: totalCount,
+        firstBook: booksData[0]?.title || 'N/A'
+      });
       
       setBooks(booksData);
       setPagination({
         currentPage: pagination.currentPage,
-        totalPages: Math.ceil(totalCount / itemsPerPage),
+        totalPages: Math.ceil(totalCount / itemsPerPage) || 1,
         totalItems: totalCount,
       });
       
-      console.log('✅ Books set successfully');
+      console.log('✅ Books loaded successfully');
     } catch (error) {
       console.error('❌ Error fetching books:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       setBooks([]);
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -97,11 +125,13 @@ export default function BooksList({
   }, [fetchBooks]);
 
   const handleFilterChange = (newFilters) => {
+    console.log('🎛️ Filter changed:', newFilters);
     setFilters(prev => ({ ...prev, ...newFilters }));
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
   const handlePageChange = (page) => {
+    console.log('📄 Page changed to:', page);
     setPagination(prev => ({ ...prev, currentPage: page }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -110,8 +140,8 @@ export default function BooksList({
     <div className={`min-h-screen bg-[#E9E7E0] ${className}`}>
       {/* Header Section */}
       {showHeader && (
-        <div className="bg-white border-b border-neutral-200">
-          <div className="container mx-auto px-4 py-8">
+        <div className="bg-[#F9F8F4] border border-dotted border-neutral-400 rounded-sm relative mx-auto max-w-7xl mt-[20px] mb-8">
+          <div className="text-center px-8 py-10 text-neutral-800">
             <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
               {title}
             </h1>
@@ -121,7 +151,7 @@ export default function BooksList({
             
             {/* Filters & Sort */}
             {(showFilters || enableSort) && (
-              <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex flex-wrap gap-4 items-center justify-center">
                 {/* Filters */}
                 {showFilters && filterOptions.length > 0 && (
                   <div className="flex gap-2">
@@ -205,7 +235,7 @@ export default function BooksList({
             <div className={`grid ${gridCols} gap-6`}>
               {books.map((book, index) => (
                 <BookCard 
-                  key={book.key || book.id || book.seed?.[0] || index} 
+                  key={book.id || book.bookId || index} 
                   book={book} 
                 />
               ))}

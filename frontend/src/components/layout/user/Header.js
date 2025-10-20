@@ -1,21 +1,35 @@
 "use client";
+
 import { useState } from "react";
 import { User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
+import { useAuth } from "@/hooks/useAuth";
 import SearchBar from "./SearchBar";
 
-export default function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+export default function UserHeader() {
   const router = useRouter();
+  const { isAuthenticated, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleSearch = (query) => {
     if (query.trim()) {
-      // Redirect đến trang books với search query
       router.push(`/books?search=${encodeURIComponent(query)}`);
     }
   };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setIsLoggingOut(false);
+    }
+  };
+
+  console.log("isAuthenticated:", isAuthenticated);
 
   return (
     <header className="bg-gray-700 shadow-md">
@@ -45,8 +59,8 @@ export default function Header() {
               showMenu={true}
             />
 
-            {/* Nếu chưa đăng nhập thì hiện Login + Sign In */}
-            {!isLoggedIn ? (
+            {/* ✅ SỬA: Lật ngược logic - !isAuthenticated (chưa login) thì hiện Login/Sign In */}
+            {!isAuthenticated ? (
               <>
                 <li>
                   <Link
@@ -66,14 +80,17 @@ export default function Header() {
                 </li>
               </>
             ) : (
-              // Nếu đã đăng nhập thì chỉ hiện biểu tượng user
+              // ✅ isAuthenticated (đã login) thì hiện Logout button
               <li>
-                <button 
-                  onClick={() => setIsLoggedIn(false)}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-200 rounded-full text-black hover:bg-gray-300 transition"
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-200 rounded-full text-black hover:bg-gray-300 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <User className="w-5 h-5" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <span className="hidden sm:inline">
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </span>
                 </button>
               </li>
             )}

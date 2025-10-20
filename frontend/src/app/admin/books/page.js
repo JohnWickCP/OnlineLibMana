@@ -42,10 +42,44 @@ function BooksContent() {
 
   const searchQuery = searchParams.get('search');
 
-  // Determine which API function to use based on search query
-  const fetchFunction = searchQuery
-    ? (params) => booksAPI.searchBooks(searchQuery, params)
-    : (params) => booksAPI.getBooks({ ...params, subject: 'fiction' });
+  // Fetch function gọi backend API
+  const fetchFunction = async (params) => {
+    try {
+      let response;
+
+      if (searchQuery && searchQuery.trim()) {
+        // Tìm kiếm theo title
+        console.log('Calling searchByTitle with:', searchQuery);
+        response = await booksAPI.searchByTitle(searchQuery);
+      } else {
+        // Lấy tất cả sách
+        console.log('Calling getAllBooks');
+        response = await booksAPI.getAllBooks();
+      }
+
+      console.log('API response:', response);
+
+      // Xử lý response từ backend {code, result: {content, totalElements}}
+      if (response.code === 1000 && response.result) {
+        return {
+          data: response.result.content || [],
+          total: response.result.totalElements || 0,
+        };
+      }
+
+      // Fallback nếu response format khác
+      return {
+        data: Array.isArray(response) ? response : [],
+        total: 0,
+      };
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      return {
+        data: [],
+        total: 0,
+      };
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#E9E7E0]">
@@ -60,17 +94,17 @@ function BooksContent() {
                 Add new Book
               </button>
             </Link>
-            
+
             {/* Search Bar */}
             <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md relative">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 className="w-full px-4 py-3 pr-12 border-2 border-neutral-300 rounded-lg text-sm transition-colors focus:outline-none focus:border-blue-600"
                 placeholder="Search books by title or author..."
                 value={searchInput}
                 onChange={handleSearchChange}
               />
-              <button 
+              <button
                 type="submit"
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
               >
@@ -88,9 +122,9 @@ function BooksContent() {
       <BooksList
         fetchFunction={fetchFunction}
         fetchParams={{}}
-        showHeader={false} // Ẩn hoàn toàn phần header
+        showHeader={false}
         emptyMessage={
-          searchQuery 
+          searchQuery
             ? `No results found for "${searchQuery}". Try different keywords.`
             : 'No books found. Try adjusting your filters or search query'
         }
@@ -108,39 +142,34 @@ function BooksContent() {
 // Wrap BooksContent trong Suspense
 export default function BooksPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#E9E7E0]">
-        {/* Loading Top Controls */}
-        <div className="bg-white border-b border-neutral-200">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="h-12 w-40 bg-neutral-200 rounded-lg animate-pulse"></div>
-              <div className="flex-1 max-w-md h-12 bg-neutral-200 rounded-lg animate-pulse"></div>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#E9E7E0]">
+          {/* Loading Top Controls */}
+          <div className="bg-white border-b border-neutral-200">
+            <div className="container mx-auto px-4 py-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="h-12 w-40 bg-neutral-200 rounded-lg animate-pulse"></div>
+                <div className="flex-1 max-w-md h-12 bg-neutral-200 rounded-lg animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Loading Content */}
+          <div className="container mx-auto px-4 py-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+              {[...Array(20)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
+                  <div className="h-4 bg-neutral-200 rounded mb-2"></div>
+                  <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-
-        {/* Loading Content */}
-        <div className="bg-white border-b border-neutral-200">
-          <div className="container mx-auto px-4 py-8">
-            <div className="h-10 w-64 bg-neutral-200 rounded animate-pulse mb-2"></div>
-            <div className="h-6 w-96 bg-neutral-200 rounded animate-pulse"></div>
-          </div>
-        </div>
-        
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-            {[...Array(20)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
-                <div className="h-4 bg-neutral-200 rounded mb-2"></div>
-                <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    }>
+      }
+    >
       <BooksContent />
     </Suspense>
   );

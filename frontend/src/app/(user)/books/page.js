@@ -25,77 +25,97 @@ function BooksContent() {
     console.log("🚀 fetchBooks started");
     try {
       setLoading(true);
-      // Lấy search query từ URL
       const searchQuery = searchParams.get("search");
       console.log("🔍 Search query from URL:", searchQuery);
 
       let response;
+      let booksData = [];
+      let totalItems = 0;
 
       if (searchQuery && searchQuery.trim()) {
-        // Nếu có search query, dùng searchBooks API
-        console.log("Using searchBooks API");
-        const params = {
-          limit: 24,
-          page: pagination.currentPage,
-        };
-        console.log("📤 Search API params:", params);
-        response = await booksAPI.searchBooks(searchQuery, params);
+        // ===== TÌM KIẾM THEO TITLE =====
+        console.log("📖 Using searchByTitle API with query:", searchQuery);
+        response = await booksAPI.searchByTitle(searchQuery);
         console.log("📥 Search API response:", response);
 
-        // Search API trả về { docs: [], numFound: ... }
-        const booksData = response.docs || [];
-        console.log("📚 Books data from search:", booksData);
-
-        setBooks(booksData);
-        setPagination({
-          currentPage: pagination.currentPage,
-          totalPages: Math.ceil((response.numFound || booksData.length) / 24),
-          totalItems: response.numFound || booksData.length,
-        });
+        // Xử lý response từ backend
+        // Response có thể có các format:
+        // 1. { code: 1000, result: { content: [], totalElements: 0 } }
+        // 2. { data: [] }
+        // 3. Trực tiếp array []
+        
+        if (response.code === 1000 && response.result) {
+          // Format 1: Có code và result
+          booksData = response.result.content || response.result || [];
+          totalItems = response.result.totalElements || booksData.length;
+        } else if (response.data) {
+          // Format 2: Có data
+          booksData = Array.isArray(response.data) ? response.data : [response.data];
+          totalItems = booksData.length;
+        } else if (Array.isArray(response)) {
+          // Format 3: Trực tiếp array
+          booksData = response;
+          totalItems = booksData.length;
+        }
       } else {
-        // Không có search query, dùng getBooks API (hiển thị sách mặc định)
-        console.log("Using getBooks API (default)");
-        const params = {
-          subject: "fiction",
-          limit: 24,
-          offset: (pagination.currentPage - 1) * 24,
-        };
-        console.log("📤 API params:", params);
-        response = await booksAPI.getBooks(params);
-        console.log("📥 API response:", response);
+        // ===== LẤY TẤT CẢ SÁCH =====
+        console.log("📚 Using getAllBooks API");
+        response = await booksAPI.getAllBooks();
+        console.log("📥 GetAll API response:", response);
 
-        // getBooks API trả về { works: [], work_count: ... }
-        const booksData = response.works || [];
-        console.log("📚 Books data:", booksData);
-
-        setBooks(booksData);
-        setPagination({
-          currentPage: pagination.currentPage,
-          totalPages: Math.ceil((response.work_count || booksData.length) / 24),
-          totalItems: response.work_count || booksData.length,
-        });
+        // Xử lý response từ backend
+        if (response.code === 1000 && response.result) {
+          // Format 1: Có code và result
+          booksData = response.result.content || response.result || [];
+          totalItems = response.result.totalElements || booksData.length;
+        } else if (response.data) {
+          // Format 2: Có data
+          booksData = Array.isArray(response.data) ? response.data : [];
+          totalItems = booksData.length;
+        } else if (Array.isArray(response)) {
+          // Format 3: Trực tiếp array
+          booksData = response;
+          totalItems = booksData.length;
+        }
       }
 
-      console.log("✅ Books set successfully");
+      console.log("📊 Processed data:", {
+        booksCount: booksData.length,
+        totalItems: totalItems,
+        firstBook: booksData[0]?.title || "N/A"
+      });
+
+      setBooks(booksData);
+      setPagination({
+        currentPage: pagination.currentPage,
+        totalPages: Math.ceil(totalItems / 24) || 1,
+        totalItems: totalItems,
+      });
+
+      console.log("✅ Books loaded successfully");
     } catch (error) {
       console.error("❌ Error fetching books:", error);
-      console.error("Error details:", {
+      console.error("❌ Error details:", {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status,
+        status: error.response?.status
       });
       setBooks([]);
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+      });
     } finally {
       setLoading(false);
       console.log("🏁 fetchBooks completed");
     }
   };
 
-  // ⚠️ QUAN TRỌNG: useEffect để gọi fetchBooks khi component mount hoặc search params thay đổi
   useEffect(() => {
-    console.log("🔄 useEffect triggered");
+    console.log("🔄 useEffect triggered - fetching books...");
     fetchBooks();
-  }, [pagination.currentPage, filters.sort, searchParams]); // Dependencies
+  }, [pagination.currentPage, filters.sort, searchParams]);
 
   const handleFilterChange = (newFilters) => {
     console.log("🎛️ Filter changed:", newFilters);
@@ -115,39 +135,35 @@ function BooksContent() {
     <div className="min-h-screen pt-6 bg-[#E9E7E0]">
       {/* Header Section */}
       <div className="bg-[#F9F8F4] border border-dotted border-neutral-400 rounded-sm relative mx-auto max-w-7xl mt-[20px] mb-8">
+        <div className="text-center px-8 py-10 text-neutral-800">
+          <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
+            {searchQuery ? `Search Results for "${searchQuery}"` : "Browse Standard Ebooks"}
+          </h1>
 
-  <div className="text-center px-8 py-10 text-neutral-800">
-    <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
-      {searchQuery
-        ? `Search Results for "${searchQuery}"`
-        : "Browse Standard Ebooks"}
-    </h1>
+          <p className="text-neutral-600 mb-6">
+            {searchQuery
+              ? `Found ${pagination.totalItems} books matching your search`
+              : "Free and liberated ebooks, carefully produced for the true book lover"}
+          </p>
 
-    <p className="text-neutral-600 mb-6">
-      {searchQuery
-        ? `Found ${pagination.totalItems} books matching your search`
-        : "Free and liberated ebooks, carefully produced for the true book lover"}
-    </p>
-
-    {/* Results Count */}
-    {!loading && (
-      <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-neutral-600">
-        <p className="mt-2">
-          Showing {books.length} of {pagination.totalItems} books
-        </p>
-        {searchQuery && (
-          <Link
-            href="/books"
-            className="mt-2 text-blue-700 underline hover:text-blue-900"
-          >
-            Clear search
-          </Link>
-        )}
+          {/* Results Count */}
+          {!loading && (
+            <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-neutral-600">
+              <p className="mt-2">
+                Showing {books.length} of {pagination.totalItems} books
+              </p>
+              {searchQuery && (
+                <Link
+                  href="/books"
+                  className="mt-2 text-blue-700 underline hover:text-blue-900"
+                >
+                  Clear search
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-</div>
-
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
@@ -213,7 +229,7 @@ function BooksContent() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-6">
                   {books.map((book, index) => (
                     <BookCard
-                      key={book.key || book.seed?.[0] || index}
+                      key={book.id || index}
                       book={book}
                     />
                   ))}
@@ -244,7 +260,7 @@ export default function BooksPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#E9E7E0]">
-          <div className="bg-white border-b border-neutral-200 ">
+          <div className="bg-white border-b border-neutral-200">
             <div className="container mx-auto px-4 py-8">
               <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
                 Browse Standard Ebooks
