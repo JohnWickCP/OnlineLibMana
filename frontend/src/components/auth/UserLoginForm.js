@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth"; 
+import { useAuth } from "@/hooks/useAuth";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/InputLogin";
 import Link from "next/link";
 
 export default function UserLoginForm() {
   const router = useRouter();
-  const { login: authLogin } = useAuth(); 
+  const { login: authLogin } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -40,7 +40,7 @@ export default function UserLoginForm() {
       setLoading(true);
       setError("");
 
-      console.log("🔐 handleSubmit called");
+      console.log(" handleSubmit called");
 
       // ✅ Gọi authLogin từ AuthProvider
       await authLogin(formData.email, formData.password);
@@ -89,7 +89,7 @@ export default function UserLoginForm() {
       </Button>
 
       <p className="text-center text-gray-700 mt-6">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link
           href="/auth/register"
           className="text-gray-700 hover:text-gray-900 underline font-medium"
