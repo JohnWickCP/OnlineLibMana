@@ -25,6 +25,7 @@ public class Book {
     private String coverImage;
     private String fileUrl;
     private LocalDateTime createdAt;
+    private String language;
 
     @OneToMany(mappedBy = "book")
     private List<Review> reviews;

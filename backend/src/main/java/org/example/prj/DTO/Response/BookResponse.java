@@ -19,6 +19,7 @@ public class BookResponse {
     private String coverImage;
     private String fileUrl;
     private LocalDateTime createdAt;
+    private String language;
 
     public BookResponse(Long id, String title, String author, String description, String coverImage) {
     }
