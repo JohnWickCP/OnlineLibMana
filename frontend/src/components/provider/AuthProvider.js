@@ -44,31 +44,39 @@ export function AuthProvider({ children }) {
 }, []);
 
   const login = async (email, password) => {
-  try {
-    console.log('🔐 AuthProvider.login() called');
-    const response = await authAPI.login({ email, password });
+    try {
+      const response = await authAPI.login({ email, password });
 
-    const authToken = response.token; // ❌ sửa từ response.result?.token
-    if (!authToken) throw new Error('Login failed: token not received');
+      const authToken = response.token;
+      if (!authToken) throw new Error('Token không hợp lệ');
 
-    const userData = response.user;
+      const userData = response.user;
 
-    setToken(authToken);
-    setUser(userData);
-    setIsAuthenticated(true);
+      setToken(authToken);
+      setUser(userData);
+      setIsAuthenticated(true);
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('authToken', authToken);
-      localStorage.setItem('user', JSON.stringify(userData));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+
+      return { token: authToken, user: userData };
+    } catch (error) {
+      setIsAuthenticated(false);
+      
+      // ✅ Throw error với thông tin chi tiết hơn
+      if (error.response?.status === 401) {
+        throw new Error('Email hoặc mật khẩu không chính xác');
+      } else if (error.response?.status === 404) {
+        throw new Error('Tài khoản không tồn tại');
+      } else if (error.code === 'ECONNABORTED') {
+        throw new Error('Kết nối timeout');
+      } else {
+        throw new Error(error.response?.data?.message || 'Đăng nhập thất bại');
+      }
     }
-
-    return { token: authToken, user: userData };
-  } catch (error) {
-    setIsAuthenticated(false);
-    console.error('❌ Login failed:', error);
-    throw error;
-  }
-};
+  };
 
 
   const logout = () => {

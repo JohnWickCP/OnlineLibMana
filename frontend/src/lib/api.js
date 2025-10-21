@@ -21,7 +21,9 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    console.log('📤 API Request:', config.method.toUpperCase(), config.url);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📤 API Request:', config.method.toUpperCase(), config.url);
+    }
     return config;
   },
   (error) => {
@@ -30,15 +32,18 @@ api.interceptors.request.use(
   }
 );
 
-// RESPONSE INTERCEPTOR
+// RESPONSE INTERCEPTOR (CHỈ GIỮ 1 INTERCEPTOR)
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.status, response.data);
+    // ✅ Chỉ log khi ở client và trong development
+    const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    if (isDev) {
+      console.log('✅ API Response:', response.status, response.config.url);
+    }
     return response;
   },
   (error) => {
-    console.error('❌ API Error:', error.response?.status, error.message);
-    
+    // ✅ Tự động clear auth khi token hết hạn/invalid
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('authToken');
@@ -47,6 +52,7 @@ api.interceptors.response.use(
       }
     }
     
+    // ✅ Không log error nữa, để UI component xử lý
     return Promise.reject(error);
   }
 );
@@ -65,7 +71,9 @@ export const authAPI = {
         password: credentials.password,
       });
       
-      console.log('🔐 Login response:', response.data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔐 Login response:', response.data);
+      }
       
       if (response.data && response.data.result) {
         return {
@@ -79,7 +87,7 @@ export const authAPI = {
       
       return response.data;
     } catch (error) {
-      console.error('❌ Login failed:', error);
+      // ✅ Error đã được xử lý trong interceptor, chỉ throw lại
       throw error;
     }
   },

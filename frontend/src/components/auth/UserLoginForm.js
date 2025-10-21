@@ -40,17 +40,21 @@ export default function UserLoginForm() {
       setLoading(true);
       setError("");
 
-      console.log(" handleSubmit called");
-
       // ✅ Gọi authLogin từ AuthProvider
       await authLogin(formData.email, formData.password);
 
-      console.log("✅ authLogin completed");
-
       router.push("/books");
     } catch (err) {
-      console.error("❌ Error:", err);
-      setError(err.message || "Đăng nhập thất bại");
+      // ✅ Xử lý lỗi chi tiết hơn
+      if (err.response?.status === 401) {
+        setError("Email hoặc mật khẩu không chính xác");
+      } else if (err.response?.status === 404) {
+        setError("Tài khoản không tồn tại");
+      } else if (err.code === 'ECONNABORTED') {
+        setError("Kết nối timeout, vui lòng thử lại");
+      } else {
+        setError(err.message || "Đăng nhập thất bại. Vui lòng thử lại");
+      }
     } finally {
       setLoading(false);
     }
