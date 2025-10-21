@@ -18,4 +18,5 @@ public class BookRequest {
     private String coverImage;
     private String fileUrl;
     private LocalDateTime createdAt;
+    private String language;
 }

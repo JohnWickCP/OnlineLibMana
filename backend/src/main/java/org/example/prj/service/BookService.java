@@ -37,6 +37,7 @@ public class BookService {
                 .coverImage(book.getCoverImage())
                 .fileUrl(book.getFileUrl())
                 .createdAt(book.getCreatedAt())
+                .language(book.getLanguage())
                 .build();
     }
 
@@ -55,7 +56,7 @@ public class BookService {
                 book.getDescription(),book.getCoverImage()));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
     public BookResponse addBook(BookRequest bookRequest) {
         Book book = Book.builder()
                 .title(bookRequest.getTitle())
@@ -65,6 +66,7 @@ public class BookService {
                 .coverImage(bookRequest.getCoverImage())
                 .fileUrl(bookRequest.getFileUrl())
                 .createdAt(bookRequest.getCreatedAt())
+                .language(bookRequest.getLanguage())
                 .build();
         bookRepository.save(book);
         return BookResponse.builder()
@@ -75,10 +77,11 @@ public class BookService {
                 .coverImage(bookRequest.getCoverImage())
                 .fileUrl(bookRequest.getFileUrl())
                 .createdAt(bookRequest.getCreatedAt())
+                .language(bookRequest.getLanguage())
                 .build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
     public BookResponse editBook(BookRequest bookRequest,Long  bookId) {
         Book book = bookRepository.getBookById(bookId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
@@ -91,6 +94,7 @@ public class BookService {
         book.setCoverImage(bookRequest.getCoverImage());
         book.setFileUrl(bookRequest.getFileUrl());
         book.setCreatedAt(bookRequest.getCreatedAt());
+        book.setLanguage(bookRequest.getLanguage());
 
         bookRepository.save(book);
 
@@ -103,10 +107,11 @@ public class BookService {
                 .coverImage(book.getCoverImage())
                 .fileUrl(book.getFileUrl())
                 .createdAt(book.getCreatedAt())
+                .language(book.getLanguage())
                 .build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
     public void deleteBook(Long bookId) {
         bookRepository.deleteById(bookId);
         log.info("Delete Successfull");
