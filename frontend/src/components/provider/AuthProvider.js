@@ -1,4 +1,3 @@
-// src/components/providers/AuthProvider.js
 'use client';
 
 import { createContext, useState, useEffect } from 'react';
@@ -11,62 +10,81 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); 
 
   // Check if user is already logged in on mount
   useEffect(() => {
-    const initAuth = () => {
-      const storedToken = typeof window !== 'undefined' ? 
-        window.localStorage?.getItem('authToken') : null;
-      const storedUser = typeof window !== 'undefined' ? 
-        window.localStorage?.getItem('user') : null;
-      const storedRole = typeof window !== 'undefined' ? 
-        window.localStorage?.getItem('userRole') : null;
+  const initAuth = () => {
+    const storedToken = typeof window !== 'undefined' 
+      ? localStorage.getItem('authToken') 
+      : null;
+    const storedUser = typeof window !== 'undefined' 
+      ? localStorage.getItem('user') 
+      : null;
 
-      if (storedToken && storedUser && storedRole) {
+    // ✅ Chỉ cần token và user
+    if (storedToken && storedUser) {
+      try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
-        setRole(storedRole);
+        setRole('USER');
+        setIsAuthenticated(true);
+        console.log('✅ Auth restored from localStorage');
+      } catch (e) {
+        console.error('Failed to parse stored user:', e);
+        setIsAuthenticated(false);
       }
-      setLoading(false);
-    };
+    } else {
+      setIsAuthenticated(false);
+    }
+    setLoading(false);
+  };
 
-    initAuth();
-  }, []);
+  initAuth();
+}, []);
 
-  const login = async (email, password, expectedRole = null) => {
+  const login = async (email, password) => {
     try {
-      const response = await authAPI.login(email, password);
-      const { token: authToken, user: userData, role: userRole } = response.data;
+      const response = await authAPI.login({ email, password });
 
-      // Check if role matches expected role
-      if (expectedRole && userRole !== expectedRole) {
-        throw new Error(`Access denied. This login is for ${expectedRole} only.`);
-      }
+      const authToken = response.token;
+      if (!authToken) throw new Error('Token không hợp lệ');
 
-      // Store in memory
+      const userData = response.user;
+
       setToken(authToken);
       setUser(userData);
-      setRole(userRole);
+      setIsAuthenticated(true);
 
-      // Store in localStorage
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem('authToken', authToken);
-        window.localStorage.setItem('user', JSON.stringify(userData));
-        window.localStorage.setItem('userRole', userRole);
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('user', JSON.stringify(userData));
       }
 
-      return { token: authToken, user: userData, role: userRole };
+      return { token: authToken, user: userData };
     } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+      setIsAuthenticated(false);
+      
+      // ✅ Throw error với thông tin chi tiết hơn
+      if (error.response?.status === 401) {
+        throw new Error('Email hoặc mật khẩu không chính xác');
+      } else if (error.response?.status === 404) {
+        throw new Error('Tài khoản không tồn tại');
+      } else if (error.code === 'ECONNABORTED') {
+        throw new Error('Kết nối timeout');
+      } else {
+        throw new Error(error.response?.data?.message || 'Đăng nhập thất bại');
+      }
     }
   };
+
 
   const logout = () => {
     // Clear memory state
     setToken(null);
     setUser(null);
     setRole(null);
+    setIsAuthenticated(false); // ✅ Set false khi logout
 
     // Clear localStorage
     if (typeof window !== 'undefined') {
@@ -83,10 +101,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const isAuthenticated = () => {
-    return !!token && !!user;
-  };
-
   const isAdmin = () => {
     return role === 'ADMIN';
   };
@@ -100,10 +114,10 @@ export function AuthProvider({ children }) {
     token,
     role,
     loading,
+    isAuthenticated, // ✅ Giờ đây là boolean, không phải function
     login,
     logout,
     updateUser,
-    isAuthenticated,
     isAdmin,
     isUser
   };
