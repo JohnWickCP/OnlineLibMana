@@ -11,18 +11,19 @@ function BooksContent() {
   const searchParams = useSearchParams();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const ITEMS_PER_PAGE = 24;
+  
   const [filters, setFilters] = useState({
     genres: [],
     sort: "date_desc",
   });
 
-  const fetchBooks = async () => {
-    console.log("🚀 fetchBooks started");
+  // ===== FETCH SÁCH VỚI PAGINATION =====
+  const fetchBooks = async (page = 1) => {
+    console.log("🚀 fetchBooks started - Page:", page);
     try {
       setLoading(true);
       const searchQuery = searchParams.get("search");
@@ -30,67 +31,71 @@ function BooksContent() {
 
       let response;
       let booksData = [];
-      let totalItems = 0;
+      let total = 0;
+      let pages = 1;
 
       if (searchQuery && searchQuery.trim()) {
-        // ===== TÌM KIẾM THEO TITLE =====
+        // ===== TÌM KIẾM (Chưa có pagination cho search) =====
         console.log("📖 Using searchByTitle API with query:", searchQuery);
         response = await booksAPI.searchByTitle(searchQuery);
         console.log("📥 Search API response:", response);
 
-        // Xử lý response từ backend
-        // Response có thể có các format:
-        // 1. { code: 1000, result: { content: [], totalElements: 0 } }
-        // 2. { data: [] }
-        // 3. Trực tiếp array []
-        
         if (response.code === 1000 && response.result) {
-          // Format 1: Có code và result
           booksData = response.result.content || response.result || [];
-          totalItems = response.result.totalElements || booksData.length;
+          total = booksData.length;
+          pages = 1;
         } else if (response.data) {
-          // Format 2: Có data
           booksData = Array.isArray(response.data) ? response.data : [response.data];
-          totalItems = booksData.length;
+          total = booksData.length;
+          pages = 1;
         } else if (Array.isArray(response)) {
-          // Format 3: Trực tiếp array
           booksData = response;
-          totalItems = booksData.length;
+          total = booksData.length;
+          pages = 1;
         }
       } else {
-        // ===== LẤY TẤT CẢ SÁCH =====
-        console.log("📚 Using getAllBooks API");
-        response = await booksAPI.getAllBooks();
+        // ===== LẤY TẤT CẢ SÁCH VỚI PAGINATION =====
+        console.log("📚 Using getAllBooks API with pagination");
+        
+        // Backend dùng page 0-indexed, frontend dùng 1-indexed
+        const backendPage = page - 1;
+        
+        response = await booksAPI.getAllBooksWithPagination(backendPage, ITEMS_PER_PAGE);
         console.log("📥 GetAll API response:", response);
 
-        // Xử lý response từ backend
         if (response.code === 1000 && response.result) {
-          // Format 1: Có code và result
-          booksData = response.result.content || response.result || [];
-          totalItems = response.result.totalElements || booksData.length;
+          // Response format từ backend:
+          // {
+          //   content: [...],
+          //   totalElements: 100,
+          //   totalPages: 50,
+          //   ...
+          // }
+          const result = response.result;
+          booksData = result.content || [];
+          total = result.totalElements || 0;
+          pages = result.totalPages || 1;
         } else if (response.data) {
-          // Format 2: Có data
           booksData = Array.isArray(response.data) ? response.data : [];
-          totalItems = booksData.length;
+          total = booksData.length;
+          pages = Math.ceil(total / ITEMS_PER_PAGE);
         } else if (Array.isArray(response)) {
-          // Format 3: Trực tiếp array
           booksData = response;
-          totalItems = booksData.length;
+          total = booksData.length;
+          pages = Math.ceil(total / ITEMS_PER_PAGE);
         }
       }
 
       console.log("📊 Processed data:", {
         booksCount: booksData.length,
-        totalItems: totalItems,
-        firstBook: booksData[0]?.title || "N/A"
+        totalItems: total,
+        totalPages: pages,
+        currentPage: page
       });
 
       setBooks(booksData);
-      setPagination({
-        currentPage: pagination.currentPage,
-        totalPages: Math.ceil(totalItems / 24) || 1,
-        totalItems: totalItems,
-      });
+      setTotalItems(total);
+      setTotalPages(pages);
 
       console.log("✅ Books loaded successfully");
     } catch (error) {
@@ -101,31 +106,28 @@ function BooksContent() {
         status: error.response?.status
       });
       setBooks([]);
-      setPagination({
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: 0,
-      });
+      setTotalItems(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
-      console.log("🏁 fetchBooks completed");
     }
   };
 
+  // ===== FETCH KHI PAGE HOẶC SEARCH THAY ĐỔI =====
   useEffect(() => {
     console.log("🔄 useEffect triggered - fetching books...");
-    fetchBooks();
-  }, [pagination.currentPage, filters.sort, searchParams]);
+    fetchBooks(currentPage);
+  }, [currentPage, filters.sort, searchParams]);
 
   const handleFilterChange = (newFilters) => {
     console.log("🎛️ Filter changed:", newFilters);
     setFilters(newFilters);
-    setPagination((prev) => ({ ...prev, currentPage: 1 }));
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page) => {
     console.log("📄 Page changed to:", page);
-    setPagination((prev) => ({ ...prev, currentPage: page }));
+    setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -142,7 +144,7 @@ function BooksContent() {
 
           <p className="text-neutral-600 mb-6">
             {searchQuery
-              ? `Found ${pagination.totalItems} books matching your search`
+              ? `Found ${totalItems} books matching your search`
               : "Free and liberated ebooks, carefully produced for the true book lover"}
           </p>
 
@@ -150,7 +152,8 @@ function BooksContent() {
           {!loading && (
             <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-neutral-600">
               <p className="mt-2">
-                Showing {books.length} of {pagination.totalItems} books
+                Showing {books.length} of {totalItems} books
+                {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
               </p>
               {searchQuery && (
                 <Link
@@ -173,7 +176,7 @@ function BooksContent() {
             {loading ? (
               // Loading State
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-x-6 gap-y-10">
-                {[...Array(20)].map((_, i) => (
+                {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
                   <div key={i} className="animate-pulse">
                     <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
                     <div className="h-4 bg-neutral-200 rounded mb-2"></div>
@@ -236,11 +239,11 @@ function BooksContent() {
                 </div>
 
                 {/* Pagination */}
-                {pagination.totalPages > 1 && (
+                {totalPages > 1 && (
                   <div className="mt-8">
                     <Pagination
-                      currentPage={pagination.currentPage}
-                      totalPages={pagination.totalPages}
+                      currentPage={currentPage}
+                      totalPages={totalPages}
                       onPageChange={handlePageChange}
                     />
                   </div>
@@ -270,7 +273,7 @@ export default function BooksPage() {
           </div>
           <div className="container mx-auto px-4 py-8">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
-              {[...Array(20)].map((_, i) => (
+              {[...Array(24)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
                   <div className="h-4 bg-neutral-200 rounded mb-2"></div>

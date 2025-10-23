@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { userAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
-export default function ReadingListsPage() {
+export default function MyBooksListsPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -23,23 +23,23 @@ export default function ReadingListsPage() {
 
   // Default lists - 3 list mặc định (match với backend enum StatusBook)
   const DEFAULT_LISTS = [
-    { 
-      name: "Already Read", 
+    {
+      name: "Already Read",
       status: "COMPLETED",
       isDefault: true,
-      color: "bg-green-500"
+      color: "bg-green-500",
     },
-    { 
-      name: "Currently Reading", 
+    {
+      name: "Currently Reading",
       status: "READING",
       isDefault: true,
-      color: "bg-blue-500"
+      color: "bg-blue-500",
     },
-    { 
-      name: "Want to Read", 
+    {
+      name: "Want to Read",
       status: "WANT",
       isDefault: true,
-      color: "bg-yellow-500"
+      color: "bg-yellow-500",
     },
   ];
 
@@ -49,7 +49,7 @@ export default function ReadingListsPage() {
       fetchAllLists();
     } else {
       // Nếu chưa login, chỉ hiển thị default lists với count = 0
-      setLists(DEFAULT_LISTS.map(list => ({ ...list, count: 0 })));
+      setLists(DEFAULT_LISTS.map((list) => ({ ...list, count: 0 })));
       setLoading(false);
     }
   }, [isAuthenticated]);
@@ -78,38 +78,48 @@ export default function ReadingListsPage() {
           status: "COMPLETED",
           isDefault: true,
           count: alreadyRead.length || 0,
-          color: "bg-green-500"
+          color: "bg-green-500",
         },
         {
           name: "Currently Reading",
           status: "READING",
           isDefault: true,
           count: currentlyReading.length || 0,
-          color: "bg-blue-500"
+          color: "bg-blue-500",
         },
         {
           name: "Want to Read",
           status: "WANT",
           isDefault: true,
           count: wantToRead.length || 0,
-          color: "bg-yellow-500"
+          color: "bg-yellow-500",
         },
       ];
 
       // TODO: Fetch custom lists khi backend có API
       // const customLists = await userAPI.getCustomLists();
-      const customLists = [];
+      const customListsResponse = await userAPI.getAllFolders();
+      const customLists = customListsResponse?.result || [];
+
+      // Định dạng lại nếu cần (tuỳ backend trả về)
+      const formattedCustomLists = customLists.map((folder) => ({
+        id: folder.title,
+        name: folder.title,
+        isDefault: false,
+        count: folder.totalBooks || 0, // Nếu backend có số lượng
+        color: "bg-purple-500",
+      }));
 
       // Combine default + custom
-      setLists([...defaultListsWithCount, ...customLists]);
+      setLists([...defaultListsWithCount, ...formattedCustomLists]);
 
       console.log("✅ Đã tải danh sách reading lists");
     } catch (err) {
       console.error("❌ Lỗi khi tải reading lists:", err);
       setError("Failed to load reading lists");
-      
+
       // Fallback: Hiển thị default lists với count = 0
-      setLists(DEFAULT_LISTS.map(list => ({ ...list, count: 0 })));
+      setLists(DEFAULT_LISTS.map((list) => ({ ...list, count: 0 })));
     } finally {
       setLoading(false);
     }
@@ -138,7 +148,7 @@ export default function ReadingListsPage() {
       // Gọi API tạo folder với đúng format backend expects
       await userAPI.addFolder({
         title: newListName,
-        description: newListDescription || ""
+        description: newListDescription || "",
       });
 
       // Reload lists
@@ -181,13 +191,8 @@ export default function ReadingListsPage() {
       return;
     }
 
-    if (list.isDefault) {
-      // Redirect đến trang xem sách theo status
-      router.push(`/profile/books?status=${list.status}`);
-    } else {
-      // Redirect đến trang custom list
-      router.push(`/profile/lists/${list.id}`);
-    }
+    const listIdentifier = list.isDefault ? list.status : list.id;
+    router.push(`/mybooks/${listIdentifier}`);
   };
 
   // Loading state
@@ -233,7 +238,9 @@ export default function ReadingListsPage() {
               >
                 {/* List Icon - màu sắc khác nhau cho mỗi default list */}
                 {list.isDefault && (
-                  <div className={`${list.color} w-12 h-12 rounded-full flex items-center justify-center mb-3`}>
+                  <div
+                    className={`${list.color} w-12 h-12 rounded-full flex items-center justify-center mb-3`}
+                  >
                     <Book className="w-6 h-6 text-white" />
                   </div>
                 )}
@@ -244,7 +251,9 @@ export default function ReadingListsPage() {
 
                 <div className="flex items-center gap-2 text-neutral-700 mb-6">
                   <Book className="w-5 h-5 text-neutral-600" />
-                  <span>{list.count} book{list.count !== 1 ? 's' : ''}</span>
+                  <span>
+                    {list.count} book{list.count !== 1 ? "s" : ""}
+                  </span>
                 </div>
 
                 <button
@@ -330,7 +339,8 @@ export default function ReadingListsPage() {
                 {/* Description input (optional) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description <span className="text-gray-400 text-xs">(Optional)</span>
+                    Description{" "}
+                    <span className="text-gray-400 text-xs">(Optional)</span>
                   </label>
                   <textarea
                     value={newListDescription}

@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDown, ExternalLink, Star, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { userAPI, booksAPI } from "@/lib/api";
+import { userAPI } from "@/lib/api";
 
 export default function BookCoverSection({ bookData, bookId }) {
   const { user, isAuthenticated } = useAuth();
@@ -19,6 +19,7 @@ export default function BookCoverSection({ bookData, bookId }) {
   const [userRating, setUserRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [rating, setRating] = useState(false);
+  const [customLists, setCustomLists] = useState([]);
 
   // Load user's current rating khi component mount
   useEffect(() => {
@@ -27,15 +28,31 @@ export default function BookCoverSection({ bookData, bookId }) {
     }
   }, [isAuthenticated, bookId]);
 
+  useEffect(() => {
+    const fetchCustomLists = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const response = await userAPI.getAllFolders();
+        // Backend trả { code: 1000, result: [...] }
+        const folders = response?.result || [];
+        setCustomLists(folders);
+      } catch (error) {
+        console.error("❌ Lỗi khi tải custom lists:", error);
+      }
+    };
+
+    fetchCustomLists();
+  }, [isAuthenticated]);
+
   // Load rating hiện tại của user cho sách này
   const loadUserRating = async () => {
     try {
       // TODO: Khi backend có API lấy rating của user cho book cụ thể
       // const response = await userAPI.getUserBookRating(bookId);
       // setUserRating(response.rating || 0);
-      console.log('📊 Loading user rating for book:', bookId);
+      console.log("📊 Loading user rating for book:", bookId);
     } catch (error) {
-      console.error('Error loading user rating:', error);
+      console.error("Error loading user rating:", error);
     }
   };
 
@@ -47,38 +64,39 @@ export default function BookCoverSection({ bookData, bookId }) {
 
     try {
       setSaving(true);
-      
+
       // Map status to backend StatusBook enum: READING, COMPLETED, WANT
       const statusMap = {
         "Want to Read": "WANT",
         "Currently Reading": "READING",
         "Already Read": "COMPLETED",
-        "Favorites": "READING" // Backend không có FAVORITES, tạm map sang READING
       };
-      
+
       const backendStatus = statusMap[status];
-      
+
       console.log(`📚 Adding "${bookData.title}" to ${status}...`);
       console.log(`🔍 Backend status value:`, backendStatus);
-      console.log(`🔍 API URL: /home/addBookByStatus/${bookId}/${backendStatus}`);
-      
+      console.log(
+        `🔍 API URL: /home/addBookByStatus/${bookId}/${backendStatus}`
+      );
+
       // Gọi API thêm sách vào list
       await userAPI.addBookByStatus(bookId, backendStatus);
-      
+
       // Cập nhật UI
       setReadingList(status);
       setOpenList(false);
-      
+
       // Hiển thị thông báo thành công
       alert(`✅ Successfully added "${bookData.title}" to ${status}!`);
-      
+
       console.log(`✅ Added "${bookData.title}" to ${status}`);
     } catch (error) {
       console.error("Error adding to list:", error);
-      
+
       // Xử lý error message
       let errorMessage = "Failed to add book to list. Please try again.";
-      
+
       if (error.response?.status === 401) {
         errorMessage = "Session expired. Please login again.";
       } else if (error.response?.status === 409) {
@@ -86,12 +104,30 @@ export default function BookCoverSection({ bookData, bookId }) {
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
-      
+
       alert(`❌ ${errorMessage}`);
     } finally {
       setSaving(false);
     }
   };
+
+  const handleAddToCustomList = async (folderName) => {
+  try {
+    setSaving(true);
+    console.log(`📚 Thêm "${bookData.title}" vào folder "${folderName}"...`);
+    
+    await userAPI.addBookToFolder(folderName, bookId);
+
+    alert(`✅ Added "${bookData.title}" to folder "${folderName}"`);
+    setOpenList(false);
+  } catch (error) {
+    console.error("❌ Lỗi khi thêm vào custom list:", error);
+    alert("Failed to add book to custom list.");
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   const handleRating = async (rating) => {
     if (!isAuthenticated) {
@@ -101,31 +137,35 @@ export default function BookCoverSection({ bookData, bookId }) {
 
     try {
       setRating(true);
-      
+
       console.log(`⭐ Rating "${bookData.title}" with ${rating} stars...`);
-      
+
       // Gọi API review book với rating
-      await userAPI.reviewBook(bookId, { 
+      await userAPI.reviewBook(bookId, {
         rating: rating,
-        comment: "" // Comment có thể để trống
+        comment: "", // Comment có thể để trống
       });
-      
+
       // Cập nhật UI
       setUserRating(rating);
-      
+
       // Hiển thị thông báo thành công
-      alert(`✅ Successfully rated "${bookData.title}" with ${rating} star${rating > 1 ? 's' : ''}!`);
-      
+      alert(
+        `✅ Successfully rated "${bookData.title}" with ${rating} star${
+          rating > 1 ? "s" : ""
+        }!`
+      );
+
       console.log(`✅ Rated "${bookData.title}" with ${rating} stars`);
-      
+
       // Optional: Reload book data để cập nhật average rating
       // window.location.reload(); // Hoặc dùng state management để refresh
     } catch (error) {
       console.error("Error rating book:", error);
-      
+
       // Xử lý error message
       let errorMessage = "Failed to rate book. Please try again.";
-      
+
       if (error.response?.status === 401) {
         errorMessage = "Session expired. Please login again.";
       } else if (error.response?.status === 400) {
@@ -133,9 +173,9 @@ export default function BookCoverSection({ bookData, bookId }) {
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
-      
+
       alert(`❌ ${errorMessage}`);
-      
+
       // Reset rating về giá trị cũ nếu có lỗi
       // setUserRating(userRating); // Giữ nguyên rating cũ
     } finally {
@@ -153,10 +193,11 @@ export default function BookCoverSection({ bookData, bookId }) {
             alt={bookData.title}
             className="w-full rounded-sm shadow-lg"
             onError={(e) => {
-              e.target.src = "https://via.placeholder.com/400x600/e5e7eb/6b7280?text=No+Cover";
+              e.target.src =
+                "https://via.placeholder.com/400x600/e5e7eb/6b7280?text=No+Cover";
             }}
           />
-          
+
           {/* Rating Badge */}
           {bookData.rating.average > 0 && (
             <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-1 shadow-md">
@@ -190,39 +231,65 @@ export default function BookCoverSection({ bookData, bookId }) {
                 <span className="font-medium">
                   {saving ? "Saving..." : readingList}
                 </span>
-                <ChevronDown 
-                  size={16} 
-                  className={`transition-transform ${openList ? "rotate-180" : ""}`}
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform ${
+                    openList ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
               {openList && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setOpenList(false)}
-                  />
-                  
-                  <div className="absolute top-full left-0 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg z-20">
-                    {["Want to Read", "Currently Reading", "Already Read", "Favorites"].map(
-                      (option) => (
-                        <button
-                          key={option}
-                          onClick={() => handleAddToList(option)}
-                          disabled={saving}
-                          className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 ${
-                            option === readingList
-                              ? "font-semibold text-blue-600 bg-blue-50"
-                              : "text-neutral-700"
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </>
-              )}
+  <>
+    {/* Lớp phủ để đóng dropdown khi click ra ngoài */}
+    <div
+      className="fixed inset-0 z-10"
+      onClick={() => setOpenList(false)}
+    />
+
+    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg z-20 max-h-64 overflow-y-auto">
+      {/* --- Danh sách mặc định --- */}
+      {["Want to Read", "Currently Reading", "Already Read"].map((option) => (
+        <button
+          key={option}
+          onClick={() => handleAddToList(option)}
+          disabled={saving}
+          className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 ${
+            option === readingList
+              ? "font-semibold text-blue-600 bg-blue-50"
+              : "text-neutral-700"
+          }`}
+        >
+          {option}
+        </button>
+      ))}
+
+      {/* --- Custom lists (folder của user) --- */}
+      {customLists.length > 0 && (
+        <>
+          <div className="border-t my-1" />
+
+          {customLists.map((folder) => (
+            <button
+              key={folder.title}
+              onClick={() => handleAddToCustomList(folder.title)}
+              disabled={saving}
+              className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 text-purple-700`}
+            >
+              {folder.title}
+            </button>
+          ))}
+        </>
+      )}
+
+      {/* --- Trường hợp không có custom list --- */}
+      {customLists.length === 0 && (
+        <div className="border-t my-1" />
+      )}
+    </div>
+  </>
+)}
+
             </div>
           ) : (
             /* Nút Login để Add to List */
@@ -239,7 +306,11 @@ export default function BookCoverSection({ bookData, bookId }) {
           {isAuthenticated ? (
             <div className="pt-2">
               <p className="text-xs text-neutral-500 mb-2 text-center">
-                {userRating > 0 ? `Your rating: ${userRating} star${userRating > 1 ? 's' : ''}` : 'Rate this book'}
+                {userRating > 0
+                  ? `Your rating: ${userRating} star${
+                      userRating > 1 ? "s" : ""
+                    }`
+                  : "Rate this book"}
               </p>
               <div className="flex justify-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -252,7 +323,9 @@ export default function BookCoverSection({ bookData, bookId }) {
                   >
                     <Star
                       size={24}
-                      className={star <= userRating ? "text-yellow-400" : "text-gray-300"}
+                      className={
+                        star <= userRating ? "text-yellow-400" : "text-gray-300"
+                      }
                       fill={star <= userRating ? "currentColor" : "none"}
                       stroke="currentColor"
                     />
