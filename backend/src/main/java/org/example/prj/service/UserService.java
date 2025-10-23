@@ -6,6 +6,8 @@ import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
 import org.example.prj.constant.StatusBook;
 import org.example.prj.entity.*;
+import org.example.prj.exception.AppException;
+import org.example.prj.exception.ErrorCode;
 import org.example.prj.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -102,6 +104,34 @@ public class UserService {
         return "Add Successful:" + book.getTitle();
     }
 
+    @PreAuthorize("isAuthenticated()")
+    public List<TilteFolder> getFBFolder() {
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<FavouriteBooks> favouriteBooks = user.getFavouriteBooks();
+
+        List<TilteFolder> folders = favouriteBooks.stream()
+                .map(fb -> TilteFolder.builder()
+                        .title(fb.getTitle())
+                        .build())
+                .toList();
+
+        return folders;
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    public String deleteFBfolder(Long id){
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.getFavouriteBooks().removeIf(fb -> fb.getId().equals(id));
+        userRepository.save(user);
+        return "Delete Successful:" + id;
+    }
+
     @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
     public List<BookDisplayResponse> getFB(Long Id, Integer page, Integer size) {
         FavouriteBooks favourite = favouriteRepository.findById(Id)
@@ -166,37 +196,37 @@ public class UserService {
         // 🔹 Kiểm tra bookshelf của user
         Bookshelf bookshelf = user.getBookshelf();
         if (bookshelf == null) {
-            // ✅ user chưa có bookshelf → tạo mới
+            //  user chưa có bookshelf → tạo mới
             bookshelf = new Bookshelf();
             bookshelf.setUser(user);
             user.setBookshelf(bookshelf);
 
-            // ✅ Lưu bookshelf để có ID (chưa có item)
+            //  Lưu bookshelf để có ID (chưa có item)
             bookshelf.setItems(new ArrayList<>());
             bookshelf = bookshelfRepository.save(bookshelf);
         }
 
-        // 🔹 Lấy danh sách item hiện tại (tránh null)
+        //  Lấy danh sách item hiện tại (tránh null)
         List<BookshelfItem> bookshelfItems = bookshelf.getItems();
         if (bookshelfItems == null) {
             bookshelfItems = new ArrayList<>();
             bookshelf.setItems(bookshelfItems);
         }
 
-        // 🔹 Kiểm tra xem sách này đã có trong bookshelf chưa
+        //  Kiểm tra xem sách này đã có trong bookshelf chưa
         Optional<BookshelfItem> existingItemOpt = bookshelfItems.stream()
                 .filter(item -> item.getBook().getId().equals(bookId))
                 .findFirst();
 
         if (existingItemOpt.isPresent()) {
-            // ✅ Có rồi → cập nhật status
+            //  Có rồi → cập nhật status
             BookshelfItem existingItem = existingItemOpt.get();
             existingItem.setStatus(StatusBook.valueOf(status));
             bookshelfItemRepository.save(existingItem);
 
-            return "✅ Updated status of book: " + book.getTitle();
+            return " Updated status of book: " + book.getTitle();
         } else {
-            // ✅ Chưa có → thêm mới
+            //  Chưa có → thêm mới
             BookshelfItem newItem = new BookshelfItem();
             newItem.setBook(book);
             newItem.setStatus(StatusBook.valueOf(status));
@@ -209,24 +239,48 @@ public class UserService {
             bookshelfItems.add(newItem);
             bookshelfRepository.save(bookshelf);
 
-            return "✅ Added new book to bookshelf: " + book.getTitle();
+            return " Added new book to bookshelf: " + book.getTitle();
         }
     }
 
-    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
+    @PreAuthorize("isAuthenticated()")
+    public String deleteFB(Long id,Long listId) {
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        FavouriteBooks favouriteBook = user.getFavouriteBooks().stream()
+                .filter(fb -> fb.getId().equals(listId))
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.LIST_NOT_FOUND));
+
+        if (!favouriteBook.getBooks().removeIf(bb -> bb.getId().equals(id))) {
+            throw  new AppException(ErrorCode.BOOK_NOT_FOUND);
+        }
+        favouriteRepository.save(favouriteBook);
+        return "Delete Successful:" + id;
+    }
+
     public Page<BookResponse> getBooksDependOnStatus(String status, Integer page, Integer size) {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        StatusBook enumStatus;
+        try {
+            enumStatus = StatusBook.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status);
+        }
+
         List<BookshelfItem> bookshelfItems = user.getBookshelf().getItems();
 
         List<Book> books = bookshelfItems.stream()
-                .filter(item -> item.getStatus().equals(status))
+                .filter(item -> item.getStatus() == enumStatus)
                 .map(BookshelfItem::getBook)
-                .collect(Collectors.toList());
-
-        // Phân trang thủ công
+                .toList();
+        System.out.println("----------------------------------------------------------------");
+        System.out.println("Bookshelf items: " + books.size());
         int start = page * size;
         int end = Math.min(start + size, books.size());
         if (start >= books.size()) {
@@ -242,9 +296,14 @@ public class UserService {
                         book.getCoverImage()
                 ))
                 .toList();
+        System.out.println("----------------------------------------------------------------");
+        System.out.println("Bookshelf items: " + books.size());
+        System.out.println(books.getFirst().getTitle());
+        System.out.println(pagedBooks.getFirst().getId());
 
         Pageable pageable = PageRequest.of(page, size);
         return new PageImpl<>(pagedBooks, pageable, books.size());
     }
+
 
 }

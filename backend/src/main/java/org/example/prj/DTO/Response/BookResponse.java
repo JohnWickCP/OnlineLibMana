@@ -22,5 +22,11 @@ public class BookResponse {
     private String language;
 
     public BookResponse(Long id, String title, String author, String description, String coverImage) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.description = description;
+        this.coverImage = coverImage;
     }
+
 }
