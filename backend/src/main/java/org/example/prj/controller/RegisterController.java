@@ -10,10 +10,7 @@ import org.example.prj.service.AuthenticationService;
 import org.example.prj.service.EmailService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -31,32 +28,35 @@ public class RegisterController {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body("Email đã tồn tại!");
         }
-        if(userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("Screen đã tồn tại!");
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            return ResponseEntity.badRequest().body("Tên người dùng đã tồn tại!");
         }
 
-        // 🔑 Lấy role USER từ DB
+        // Lấy role USER từ DB
         Role role = roleRepository.findByName("USER")
                 .orElseThrow(() -> new RuntimeException("Role USER chưa được tạo trong DB"));
 
+        // Tạo user mới (chưa kích hoạt)
         User newUser = User.builder()
                 .email(request.getEmail())
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .active(false)
-                .role(role) // gán role đã tồn tại
+                .role(role)
                 .build();
 
         userRepository.save(newUser);
 
         // Sinh token magic link
         String token = authenticationService.generateToken(newUser);
-        String magicLink = "http://localhost:3000/magic-login?token=" + token;
+        String magicLink = "http://localhost:3000/magic-login/" + token;
 
-        emailService.sendEmail(newUser.getEmail(), "Xác thực tài khoản",
-                "Click link để kích hoạt: " + magicLink);
+        emailService.sendEmail(
+                newUser.getEmail(),
+                "Xác thực tài khoản",
+                magicLink
+        );
+
         return ResponseEntity.ok("Vui lòng kiểm tra email để xác thực tài khoản.");
     }
-
 }
-
