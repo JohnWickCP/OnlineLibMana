@@ -173,7 +173,7 @@ export const userAPI = {
   },
 
   addFolder: async (folderData) => {
-    const response = await api.post('/home/addBFolder', folderData);
+    const response = await api.post('/home/addFBfolder', folderData);
     return response.data;
   },
 

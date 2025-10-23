@@ -46,7 +46,7 @@ export default function UserHeader() {
           <ul className="flex items-center space-x-6 text-white">
             <li>
               <Link
-                href="/books"
+                href="/mybooks"
                 className="uppercase hover:text-green-400 text-sm font-medium text-green-400"
               >
                 MyBooks
