@@ -13,6 +13,7 @@ import org.example.prj.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
@@ -27,8 +28,10 @@ public class UserCotroller {
     private UserService userService;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private RestClient.Builder builder;
 
-//    Test
+    //    Test
     @GetMapping("/listUser")
     public List<User> getUsers() {
         return userRepository.findAll();
@@ -51,6 +54,23 @@ public class UserCotroller {
                 .result(userService.addFBFolder(tilteFolder))
                 .build();
     }
+
+//    Get list favourite book folder
+    @GetMapping("/getFBfolder")
+    public ApiResponse<List<TilteFolder>> getFBFolder() {
+        return ApiResponse.<List<TilteFolder>>builder()
+                .result(userService.getFBFolder())
+                .build();
+    }
+
+//    Delete favourite book folder
+    @DeleteMapping("/deleteFBfolder/{id}")
+    public ApiResponse<String> deleteFBFolder(@PathVariable("id") Long id) {
+        return ApiResponse.<String>builder()
+                .result(userService.deleteFBfolder(id))
+                .build();
+    }
+
 //    Add favourite book(User)
     @PostMapping("/addFB/{bookId}/favourites/{listId}")
     public ApiResponse<String> addFB(@PathVariable("bookId") Long bookId,
@@ -67,6 +87,15 @@ public class UserCotroller {
                                                         @RequestParam(defaultValue = "20") Integer size) {
         return ApiResponse.<List<BookDisplayResponse>>builder()
                 .result(userService.getFB(id,page,size))
+                .build();
+    }
+
+//    Delete favourite book
+    @DeleteMapping("/fb/{listId}/{id}")
+    public ApiResponse<String> deleteFB(@PathVariable("id") Long id,
+                                        @PathVariable("listId") Long listId) {
+        return ApiResponse.<String>builder()
+                .result(userService.deleteFB(id,listId))
                 .build();
     }
 
