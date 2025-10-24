@@ -9,8 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TilteFolder {
-    Long id;
-    Long count;
     String title;
     String description;
 }

@@ -104,7 +104,6 @@ public class UserService {
         return "Add Successful:" + book.getTitle();
     }
 
-//
     @PreAuthorize("isAuthenticated()")
     public List<TilteFolder> getFBFolder() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -112,25 +111,14 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<FavouriteBooks> favouriteBooks = user.getFavouriteBooks();
+
         List<TilteFolder> folders = favouriteBooks.stream()
                 .map(fb -> TilteFolder.builder()
                         .title(fb.getTitle())
-                        .id(fb.getId())
-                        .count(countBook("FB",user,fb.getId()))
                         .build())
                 .toList();
 
         return folders;
-    }
-
-    @PreAuthorize("isAuthenticated()")
-    public Long countBookByStautus(String status){
-        var username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Long count = countBook(status,user,null);
-        return count;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -318,18 +306,4 @@ public class UserService {
     }
 
 
-//    Count book depend on mode
-    public Long countBook(String mode,User user,Long listId) {
-        Long count;
-        if(mode.equals("FB")){
-            count= user.getFavouriteBooks().stream().filter(fb->
-                    fb.getId()==listId).findFirst().get().getBooks().stream().count();
-            return count;
-        }else{
-            count = user.getBookshelf().getItems().stream()
-                    .filter(bsi -> bsi.getStatus() == StatusBook.valueOf(mode))
-                    .count();
-            return count;
-        }
-    }
 }
