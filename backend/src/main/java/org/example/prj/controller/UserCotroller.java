@@ -80,14 +80,6 @@ public class UserCotroller {
                 .build();
     }
 
-//    Count Book depend on status
-    @GetMapping("/countBook/{status}")
-    public ApiResponse<Long> getBookCount(@PathVariable("status")  String status) {
-        return ApiResponse.<Long>builder()
-                .result(userService.countBookByStautus(status))
-                .build();
-    }
-
 //    Display favourite book(user)
     @GetMapping("/fb/{listId}")
     public ApiResponse<List<BookDisplayResponse>> getFB(@PathVariable("listId") Long id,

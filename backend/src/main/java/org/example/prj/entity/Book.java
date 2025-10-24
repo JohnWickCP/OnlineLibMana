@@ -26,7 +26,6 @@ public class Book {
     private String fileUrl;
     private LocalDateTime createdAt;
     private String language;
-    private String subject;
 
     @OneToMany(mappedBy = "book")
     private List<Review> reviews;

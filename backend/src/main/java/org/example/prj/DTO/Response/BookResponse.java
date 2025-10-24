@@ -20,7 +20,6 @@ public class BookResponse {
     private String fileUrl;
     private LocalDateTime createdAt;
     private String language;
-    private String subject;
 
     public BookResponse(Long id, String title, String author, String description, String coverImage) {
         this.id = id;
