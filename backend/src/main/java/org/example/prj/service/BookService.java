@@ -1,5 +1,6 @@
 package org.example.prj.service;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.example.prj.DTO.Request.BookRequest;
 import org.example.prj.DTO.Response.BookDisplayResponse;
@@ -38,6 +39,7 @@ public class BookService {
                 .fileUrl(book.getFileUrl())
                 .createdAt(book.getCreatedAt())
                 .language(book.getLanguage())
+                .subject(book.getSubject())
                 .build();
     }
 
@@ -57,6 +59,7 @@ public class BookService {
     }
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
+    @Transactional
     public BookResponse addBook(BookRequest bookRequest) {
         Book book = Book.builder()
                 .title(bookRequest.getTitle())
@@ -67,21 +70,27 @@ public class BookService {
                 .fileUrl(bookRequest.getFileUrl())
                 .createdAt(bookRequest.getCreatedAt())
                 .language(bookRequest.getLanguage())
+                .subject(bookRequest.getSubject())
                 .build();
-        bookRepository.save(book);
+        Book savedBook = bookRepository.save(book);
+
         return BookResponse.builder()
-                .title(bookRequest.getTitle())
-                .author(bookRequest.getAuthor())
-                .description(bookRequest.getDescription())
-                .category(bookRequest.getCategory())
-                .coverImage(bookRequest.getCoverImage())
-                .fileUrl(bookRequest.getFileUrl())
-                .createdAt(bookRequest.getCreatedAt())
-                .language(bookRequest.getLanguage())
+                .id(savedBook.getId())
+                .title(savedBook.getTitle())
+                .author(savedBook.getAuthor())
+                .description(savedBook.getDescription())
+                .category(savedBook.getCategory())
+                .coverImage(savedBook.getCoverImage())
+                .fileUrl(savedBook.getFileUrl())
+                .createdAt(savedBook.getCreatedAt())
+                .language(savedBook.getLanguage())
+                .subject(savedBook.getSubject())
                 .build();
+
     }
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
+    @Transactional
     public BookResponse editBook(BookRequest bookRequest,Long  bookId) {
         Book book = bookRepository.getBookById(bookId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
@@ -95,6 +104,7 @@ public class BookService {
         book.setFileUrl(bookRequest.getFileUrl());
         book.setCreatedAt(bookRequest.getCreatedAt());
         book.setLanguage(bookRequest.getLanguage());
+        book.setSubject(bookRequest.getSubject());
 
         bookRepository.save(book);
 
@@ -108,6 +118,7 @@ public class BookService {
                 .fileUrl(book.getFileUrl())
                 .createdAt(book.getCreatedAt())
                 .language(book.getLanguage())
+                .subject(book.getSubject())
                 .build();
     }
 
