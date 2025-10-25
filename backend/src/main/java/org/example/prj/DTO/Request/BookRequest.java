@@ -19,4 +19,5 @@ public class BookRequest {
     private String fileUrl;
     private LocalDateTime createdAt;
     private String language;
+    private String subject;
 }

@@ -2,6 +2,7 @@ package org.example.prj.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.prj.DTO.Request.TokenRequest;
 import org.example.prj.DTO.Response.AuthenticationResponse;
 import org.example.prj.entity.User;
 import org.example.prj.exception.AppException;
@@ -21,8 +22,9 @@ public class MagicLoginController {
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
 
-    @GetMapping("/login/{token}")
-    public ResponseEntity<AuthenticationResponse> loginWithMagicLink(@PathVariable("token") String token) {
+    @GetMapping("/login")
+    public ResponseEntity<AuthenticationResponse> loginWithMagicLink(@RequestBody TokenRequest request) {
+        String token = request.getToken();
         try {
             var jwt = authenticationService.verifyToken(token, false);
 

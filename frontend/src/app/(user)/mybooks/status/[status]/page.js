@@ -6,18 +6,44 @@ import BookCard from "@/components/shared/BookCard";
 import Pagination from "@/components/shared/Pagination";
 import { userAPI } from "@/lib/api";
 import Link from "next/link";
-import { ArrowLeft, Trash2, FolderOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle, Clock } from "lucide-react";
 
-export default function MyBookListDetailPage() {
+// Status configuration
+const STATUS_CONFIG = {
+  COMPLETED: {
+    label: "Completed",
+    icon: CheckCircle,
+    color: "green",
+    bgColor: "bg-green-100",
+    iconColor: "text-green-600",
+    description: "Books you've finished reading"
+  },
+  READING: {
+    label: "Currently Reading",
+    icon: BookOpen,
+    color: "blue",
+    bgColor: "bg-blue-100",
+    iconColor: "text-blue-600",
+    description: "Books you're reading right now"
+  },
+  WANT: {
+    label: "Want to Read",
+    icon: Clock,
+    color: "orange",
+    bgColor: "bg-orange-100",
+    iconColor: "text-orange-600",
+    description: "Books you want to read in the future"
+  }
+};
+
+export default function BooksByStatusPage() {
   const params = useParams();
   const router = useRouter();
-  const listId = params.id;
+  const status = params.status?.toUpperCase();
 
   const [books, setBooks] = useState([]);
-  const [folderInfo, setFolderInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [deletingBookId, setDeletingBookId] = useState(null);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,115 +51,58 @@ export default function MyBookListDetailPage() {
   const [totalItems, setTotalItems] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
-  // ===== FETCH SÁCH TRONG FOLDER VỚI PAGINATION =====
-  const fetchBooksInFolder = async (page = 1) => {
+  // Validate status
+  const statusConfig = STATUS_CONFIG[status];
+  const StatusIcon = statusConfig?.icon;
+
+  // ===== FETCH SÁCH THEO STATUS VỚI PAGINATION =====
+  const fetchBooksByStatus = async (page = 1) => {
+    
+
+    if (!statusConfig) {
+      setError("Invalid status");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      console.log("📂 Fetching books for list ID:", listId, "Page:", page);
+      console.log("📚 Fetching books with status:", status, "Page:", page);
 
       // Backend dùng page 0-indexed
       const backendPage = page - 1;
       
       // Gọi API với pagination
-      const response = await userAPI.getFolderById(listId, backendPage, ITEMS_PER_PAGE);
+      const response = await userAPI.getBooksByStatus(status);
       console.log("📥 API Response:", response);
 
-      if (response.code === 1000) {
+      if (response.code === 1000 && response.result) {
         const result = response.result;
         
-        // Kiểm tra xem result có phải pagination object không
-        if (result.content) {
-          // Response có pagination
-          setBooks(result.content || []);
-          setTotalItems(result.totalElements || 0);
-          setTotalPages(result.totalPages || 1);
-        } else if (Array.isArray(result)) {
-          // Response trả về array trực tiếp (không có pagination)
-          setBooks(result);
-          setTotalItems(result.length);
-          setTotalPages(1);
-        } else {
-          setBooks([]);
-          setTotalItems(0);
-          setTotalPages(1);
-        }
-
-        // Lấy thông tin folder (nếu có trong response)
-        if (result.folderName) {
-          setFolderInfo({
-            id: listId,
-            name: result.folderName,
-            description: result.description || "",
-            bookCount: result.totalElements || result.content?.length || 0,
-          });
-        } else if (!folderInfo) {
-          // Nếu chưa có folderInfo, tạo default
-          setFolderInfo({
-            id: listId,
-            name: `List #${listId}`,
-            description: "",
-            bookCount: result.totalElements || result.length || 0,
-          });
-        }
+        // Response có pagination structure
+        setBooks(result.content || []);
+        setTotalItems(result.totalElements || 0);
+        setTotalPages(result.totalPages || 1);
       } else if (Array.isArray(response)) {
+        // Fallback: response trả về array trực tiếp
         setBooks(response);
         setTotalItems(response.length);
         setTotalPages(1);
       } else {
-        setError("Invalid response format");
         setBooks([]);
         setTotalItems(0);
         setTotalPages(1);
       }
     } catch (err) {
-      console.error("❌ Error fetching folder books:", err);
+      console.error("❌ Error fetching books by status:", err);
       setError(err.response?.data?.message || "Failed to load books");
       setBooks([]);
       setTotalItems(0);
       setTotalPages(1);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ===== XÓA SÁCH KHỎI FOLDER =====
-  const handleRemoveBook = async (bookId) => {
-    if (!confirm("Are you sure you want to remove this book from the list?")) {
-      return;
-    }
-
-    try {
-      setDeletingBookId(bookId);
-      await userAPI.removeBookFromFolder(listId, bookId);
-      
-      // Cập nhật UI ngay lập tức
-      setBooks(books.filter(book => book.id !== bookId));
-      setTotalItems(prev => prev - 1);
-      
-      // Cập nhật số lượng sách
-      if (folderInfo) {
-        setFolderInfo({
-          ...folderInfo,
-          bookCount: folderInfo.bookCount - 1
-        });
-      }
-
-      // Nếu trang hiện tại trống và không phải trang đầu, quay về trang trước
-      if (books.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      } else if (books.length === 1) {
-        // Nếu là trang đầu và hết sách, fetch lại
-        fetchBooksInFolder(currentPage);
-      }
-
-      console.log("✅ Book removed successfully");
-    } catch (err) {
-      console.error("❌ Error removing book:", err);
-      alert(err.response?.data?.message || "Failed to remove book");
-    } finally {
-      setDeletingBookId(null);
     }
   };
 
@@ -144,12 +113,43 @@ export default function MyBookListDetailPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ===== FETCH KHI PAGE THAY ĐỔI =====
+  // ===== FETCH KHI PAGE HOẶC STATUS THAY ĐỔI =====
   useEffect(() => {
-    if (listId) {
-      fetchBooksInFolder(currentPage);
+    if (status && statusConfig) {
+      setCurrentPage(1); // Reset về trang 1 khi đổi status
+      fetchBooksByStatus(1);
     }
-  }, [listId, currentPage]);
+  }, [status]);
+
+  useEffect(() => {
+    if (status && statusConfig && currentPage > 1) {
+      fetchBooksByStatus(currentPage);
+    }
+  }, [currentPage]);
+
+  // ===== INVALID STATUS =====
+  if (!statusConfig) {
+    return (
+      <div className="min-h-screen pt-6 bg-[#E9E7E0]">
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <h3 className="text-lg font-semibold text-red-900 mb-2">
+              Invalid Status
+            </h3>
+            <p className="text-red-700 mb-4">
+              Status must be one of: COMPLETED, READING, or WANT
+            </p>
+            <button
+              onClick={() => router.push("/mybooks")}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Back to My Books
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ===== LOADING STATE =====
   if (loading) {
@@ -181,14 +181,14 @@ export default function MyBookListDetailPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <h3 className="text-lg font-semibold text-red-900 mb-2">
-              Failed to load list
+              Failed to load books
             </h3>
             <p className="text-red-700 mb-4">{error}</p>
             <button
               onClick={() => router.push("/mybooks")}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
             >
-              Back to My Lists
+              Back to My Books
             </button>
           </div>
         </div>
@@ -207,33 +207,31 @@ export default function MyBookListDetailPage() {
             className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-6 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Back to My Lists</span>
+            <span>Back to My Books</span>
           </Link>
 
-          {/* Folder Header */}
+          {/* Status Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FolderOpen className="w-8 h-8 text-blue-600" />
+              <div className={`w-16 h-16 ${statusConfig.bgColor} rounded-lg flex items-center justify-center`}>
+                <StatusIcon className={`w-8 h-8 ${statusConfig.iconColor}`} />
               </div>
               <div>
                 <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
-                  {folderInfo?.name || `List #${listId}`}
+                  {statusConfig.label}
                 </h1>
                 <p className="text-neutral-600">
-                  {totalItems} {totalItems === 1 ? "book" : "books"} in this list
+                  {totalItems} {totalItems === 1 ? "book" : "books"}
                   {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Description (if exists) */}
-          {folderInfo?.description && (
-            <p className="text-neutral-600 mt-4 italic">
-              {folderInfo.description}
-            </p>
-          )}
+          {/* Description */}
+          <p className="text-neutral-600 italic">
+            {statusConfig.description}
+          </p>
         </div>
       </div>
 
@@ -242,12 +240,14 @@ export default function MyBookListDetailPage() {
         {books.length === 0 && !loading ? (
           // Empty State
           <div className="text-center py-16 bg-white rounded-lg border border-neutral-200">
-            <FolderOpen className="w-16 h-16 mx-auto text-neutral-300 mb-4" />
+            <StatusIcon className={`w-16 h-16 mx-auto text-neutral-300 mb-4`} />
             <h3 className="text-lg font-semibold text-neutral-700 mb-2">
-              This list is empty
+              No books in "{statusConfig.label}"
             </h3>
             <p className="text-neutral-500 mb-6">
-              Start adding books to organize your reading collection
+              {status === "READING" && "Start reading a book to see it here"}
+              {status === "COMPLETED" && "Books you finish will appear here"}
+              {status === "WANT" && "Add books you want to read to this list"}
             </p>
             <Link
               href="/books"
@@ -261,24 +261,7 @@ export default function MyBookListDetailPage() {
             {/* Books Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {books.map((book) => (
-                <div key={book.id} className="relative group">
-                  {/* Remove Button */}
-                  <button
-                    onClick={() => handleRemoveBook(book.id)}
-                    disabled={deletingBookId === book.id}
-                    className="absolute top-2 right-2 z-10 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Remove from list"
-                  >
-                    {deletingBookId === book.id ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
-
-                  {/* Book Card */}
-                  <BookCard book={book} />
-                </div>
+                <BookCard key={book.id} book={book} />
               ))}
             </div>
 

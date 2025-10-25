@@ -49,7 +49,6 @@ public class BookController {
 
 //    Add book(Admin)
     @PostMapping("/addBook")
-    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public ApiResponse<BookResponse> addBook(@RequestBody BookRequest bookRequest) {
         return ApiResponse.<BookResponse>builder()
                 .result(bookService.addBook(bookRequest))
@@ -58,7 +57,6 @@ public class BookController {
 
 //    Edit book(Admin)
     @PostMapping("/editBook/{id}")
-    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public ApiResponse<BookResponse> editBook(@RequestBody BookRequest bookRequest,
                                               @PathVariable Long id) {
         return ApiResponse.<BookResponse>builder()
@@ -68,7 +66,6 @@ public class BookController {
 
 //    Delete book(Admin)
     @DeleteMapping("/delete/{id}")
-    @PreAuthorize("hasAuthority('SCOPE_ADMIN')")
     public void deleteBook(@PathVariable Long id) {
         bookService.deleteBook(id);
     }
