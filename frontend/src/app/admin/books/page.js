@@ -29,7 +29,9 @@ function AdminBooksContent() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      router.push(`/admin/books?search=${encodeURIComponent(searchInput.trim())}`);
+      router.push(
+        `/admin/books?search=${encodeURIComponent(searchInput.trim())}`
+      );
     } else {
       router.push("/admin/books");
     }
@@ -52,7 +54,7 @@ function AdminBooksContent() {
         // Tìm kiếm theo title
         console.log("🔍 Admin searching books:", searchQuery);
         response = await booksAPI.searchByTitle(searchQuery);
-        
+
         // Search không có pagination, return tất cả results
         if (response.code === 1000 && response.result) {
           const books = response.result.content || response.result || [];
@@ -102,9 +104,7 @@ function AdminBooksContent() {
             <h1 className="text-3xl font-bold text-gray-900">
               Books Management
             </h1>
-            <p className="text-gray-600 mt-1">
-              Manage your library collection
-            </p>
+            <p className="text-gray-600 mt-1">Manage your library collection</p>
           </div>
 
           {/* Controls */}
@@ -118,7 +118,10 @@ function AdminBooksContent() {
             </Link>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md relative">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex-1 max-w-md relative"
+            >
               <input
                 type="text"
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -126,11 +129,11 @@ function AdminBooksContent() {
                 value={searchInput}
                 onChange={handleSearchChange}
               />
-              <Search 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 border border-[#747370]" 
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 border border-[#747370]"
                 size={20}
               />
-              
+
               {searchInput && (
                 <button
                   type="button"
@@ -147,7 +150,9 @@ function AdminBooksContent() {
           {searchQuery && (
             <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
               <span>Search results for:</span>
-              <span className="font-semibold text-gray-900">"{searchQuery}"</span>
+              <span className="font-semibold text-gray-900">
+                {`"${searchQuery}"`}
+              </span>
               <button
                 onClick={handleClearSearch}
                 className="ml-2 text-blue-600 hover:underline"
@@ -161,10 +166,7 @@ function AdminBooksContent() {
 
       {/* Books List Component */}
       <div className="container mx-auto px-6 py-8">
-        <BooksList
-          fetchFunction={fetchFunction}
-          searchQuery={searchQuery}
-        />
+        <BooksList fetchFunction={fetchFunction} searchQuery={searchQuery} />
       </div>
     </div>
   );

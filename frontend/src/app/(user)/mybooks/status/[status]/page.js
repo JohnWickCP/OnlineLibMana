@@ -16,7 +16,7 @@ const STATUS_CONFIG = {
     color: "green",
     bgColor: "bg-green-100",
     iconColor: "text-green-600",
-    description: "Books you've finished reading"
+    description: "Books you've finished reading",
   },
   READING: {
     label: "Currently Reading",
@@ -24,7 +24,7 @@ const STATUS_CONFIG = {
     color: "blue",
     bgColor: "bg-blue-100",
     iconColor: "text-blue-600",
-    description: "Books you're reading right now"
+    description: "Books you're reading right now",
   },
   WANT: {
     label: "Want to Read",
@@ -32,8 +32,8 @@ const STATUS_CONFIG = {
     color: "orange",
     bgColor: "bg-orange-100",
     iconColor: "text-orange-600",
-    description: "Books you want to read in the future"
-  }
+    description: "Books you want to read in the future",
+  },
 };
 
 export default function BooksByStatusPage() {
@@ -44,7 +44,7 @@ export default function BooksByStatusPage() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -57,8 +57,6 @@ export default function BooksByStatusPage() {
 
   // ===== FETCH SÁCH THEO STATUS VỚI PAGINATION =====
   const fetchBooksByStatus = async (page = 1) => {
-    
-
     if (!statusConfig) {
       setError("Invalid status");
       setLoading(false);
@@ -73,14 +71,14 @@ export default function BooksByStatusPage() {
 
       // Backend dùng page 0-indexed
       const backendPage = page - 1;
-      
+
       // Gọi API với pagination
       const response = await userAPI.getBooksByStatus(status);
       console.log("📥 API Response:", response);
 
       if (response.code === 1000 && response.result) {
         const result = response.result;
-        
+
         // Response có pagination structure
         setBooks(result.content || []);
         setTotalItems(result.totalElements || 0);
@@ -213,7 +211,9 @@ export default function BooksByStatusPage() {
           {/* Status Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 ${statusConfig.bgColor} rounded-lg flex items-center justify-center`}>
+              <div
+                className={`w-16 h-16 ${statusConfig.bgColor} rounded-lg flex items-center justify-center`}
+              >
                 <StatusIcon className={`w-8 h-8 ${statusConfig.iconColor}`} />
               </div>
               <div>
@@ -229,9 +229,7 @@ export default function BooksByStatusPage() {
           </div>
 
           {/* Description */}
-          <p className="text-neutral-600 italic">
-            {statusConfig.description}
-          </p>
+          <p className="text-neutral-600 italic">{statusConfig.description}</p>
         </div>
       </div>
 
@@ -242,7 +240,7 @@ export default function BooksByStatusPage() {
           <div className="text-center py-16 bg-white rounded-lg border border-neutral-200">
             <StatusIcon className={`w-16 h-16 mx-auto text-neutral-300 mb-4`} />
             <h3 className="text-lg font-semibold text-neutral-700 mb-2">
-              No books in "{statusConfig.label}"
+              {`No books in "${statusConfig.label}"`}
             </h3>
             <p className="text-neutral-500 mb-6">
               {status === "READING" && "Start reading a book to see it here"}
