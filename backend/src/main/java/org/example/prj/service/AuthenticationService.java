@@ -55,7 +55,7 @@ public class AuthenticationService {
         var user = userRepository.findByEmail(authenticationRequest.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
-        if(!authenticated && !user.isActive()) {
+        if(!authenticated) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 

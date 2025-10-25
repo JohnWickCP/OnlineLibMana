@@ -111,14 +111,14 @@ export default function BookCoverSection({ bookData, bookId }) {
     }
   };
 
-  const handleAddToCustomList = async (folderName) => {
+  const handleAddToCustomList = async (folder) => {
   try {
     setSaving(true);
-    console.log(`📚 Thêm "${bookData.title}" vào folder "${folderName}"...`);
-    
-    await userAPI.addBookToFolder(folderName, bookId);
+    console.log(`📚 Thêm "${bookData.id}" vào folder "${folder.id}"...`);
 
-    alert(`✅ Added "${bookData.title}" to folder "${folderName}"`);
+    await userAPI.addBookToFavorites(bookData.id, folder.id);
+
+    alert(`✅ Added "${bookData.title}" to folder "${folder.title}"`);
     setOpenList(false);
   } catch (error) {
     console.error("❌ Lỗi khi thêm vào custom list:", error);
@@ -271,8 +271,8 @@ export default function BookCoverSection({ bookData, bookId }) {
 
           {customLists.map((folder) => (
             <button
-              key={folder.title}
-              onClick={() => handleAddToCustomList(folder.title)}
+              key={folder.id}
+              onClick={() => handleAddToCustomList(folder)}
               disabled={saving}
               className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 text-purple-700`}
             >

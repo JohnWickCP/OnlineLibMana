@@ -66,9 +66,9 @@ export default function MyBooksListsPage() {
 
       // Fetch song song số lượng sách trong mỗi default list
       const [alreadyRead, currentlyReading, wantToRead] = await Promise.all([
-        userAPI.getBooksByStatus("COMPLETED").catch(() => []),
-        userAPI.getBooksByStatus("READING").catch(() => []),
-        userAPI.getBooksByStatus("WANT").catch(() => []),
+        userAPI.getCountBook("COMPLETED").catch(() => []),
+        userAPI.getCountBook("READING").catch(() => []),
+        userAPI.getCountBook("WANT").catch(() => []),
       ]);
 
       // Tạo default lists với count thực tế
@@ -77,21 +77,21 @@ export default function MyBooksListsPage() {
           name: "Already Read",
           status: "COMPLETED",
           isDefault: true,
-          count: alreadyRead.length || 0,
+          count: alreadyRead.result || 0,
           color: "bg-green-500",
         },
         {
           name: "Currently Reading",
           status: "READING",
           isDefault: true,
-          count: currentlyReading.length || 0,
+          count: currentlyReading.result || 0,
           color: "bg-blue-500",
         },
         {
           name: "Want to Read",
           status: "WANT",
           isDefault: true,
-          count: wantToRead.length || 0,
+          count: wantToRead.result || 0,
           color: "bg-yellow-500",
         },
       ];
@@ -103,17 +103,15 @@ export default function MyBooksListsPage() {
 
       // Định dạng lại nếu cần (tuỳ backend trả về)
       const formattedCustomLists = customLists.map((folder) => ({
-        id: folder.title,
+        id: folder.id,
         name: folder.title,
         isDefault: false,
-        count: folder.totalBooks || 0, // Nếu backend có số lượng
+        count: folder.count || 0, // Nếu backend có số lượng
         color: "bg-purple-500",
       }));
-
       // Combine default + custom
       setLists([...defaultListsWithCount, ...formattedCustomLists]);
 
-      console.log("✅ Đã tải danh sách reading lists");
     } catch (err) {
       console.error("❌ Lỗi khi tải reading lists:", err);
       setError("Failed to load reading lists");
@@ -191,8 +189,15 @@ export default function MyBooksListsPage() {
       return;
     }
 
-    const listIdentifier = list.isDefault ? list.status : list.id;
-    router.push(`/mybooks/${listIdentifier}`);
+    let path;
+
+  if (list.id) {
+    path = `/mybooks/${list.id}`;
+  } else {
+    path = `/mybooks/status/${list.status}`;
+  }
+
+  router.push(path);
   };
 
   // Loading state
@@ -236,6 +241,7 @@ export default function MyBooksListsPage() {
                 key={index}
                 className="flex flex-col items-center justify-start px-6"
               >
+                
                 {/* List Icon - màu sắc khác nhau cho mỗi default list */}
                 {list.isDefault && (
                   <div

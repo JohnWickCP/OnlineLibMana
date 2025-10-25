@@ -1,259 +1,146 @@
-/**
- * components/shared/BooksList.js
- * Component reusable để hiển thị danh sách sách
- * - Hỗ trợ pagination
- * - Hỗ trợ filters và sort
- * - Loading và empty states
- * - Tương thích với backend API
- */
+"use client";
 
-'use client';
+import { useState, useEffect } from "react";
+import BookCard from "@/components/shared/BookCard";
+import Pagination from "@/components/shared/Pagination";
+import { Loader2, BookOpen } from "lucide-react";
+import Link from "next/link";
 
-import { useState, useEffect, useCallback } from 'react';
-import BookCard from '@/components/shared/BookCard';
-import Pagination from '@/components/shared/Pagination';
-
-export default function BooksList({
-  fetchFunction,
-  fetchParams = {},
-  title = 'Books',
-  description = '',
-  emptyMessage = 'No books found',
-  emptyActionText = 'Browse all books',
-  onEmptyAction = null,
-  itemsPerPage = 24,
-  showFilters = false,
-  filterOptions = [],
-  gridCols = 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4',
-  enableSort = false,
-  sortOptions = [],
-  className = '',
-  showHeader = true,
-}) {
+export default function BooksList({ fetchFunction, searchQuery }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-  });
-  const [filters, setFilters] = useState({
-    sort: sortOptions[0]?.value || 'date_desc',
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const ITEMS_PER_PAGE = 24;
 
-  // Fetch books từ backend
-  const fetchBooks = useCallback(async () => {
-    console.log('🚀 BooksList fetchBooks started');
+  // Fetch books khi page hoặc search thay đổi
+  useEffect(() => {
+    fetchBooks(currentPage);
+  }, [currentPage, searchQuery]);
+
+  const fetchBooks = async (page) => {
     try {
       setLoading(true);
+      console.log("📚 Fetching books - Page:", page);
+
+      // Backend dùng 0-indexed
+      const backendPage = page - 1;
       
-      // Combine params
-      const params = {
-        ...fetchParams,
-        limit: itemsPerPage,
-        offset: (pagination.currentPage - 1) * itemsPerPage,
-        page: pagination.currentPage,
-        ...(enableSort && { sort: filters.sort }),
-      };
+      const result = await fetchFunction(backendPage, ITEMS_PER_PAGE);
       
-      console.log('📤 API params:', params);
-      const response = await fetchFunction(params);
-      console.log('📥 API response:', response);
+      setBooks(result.data || []);
+      setTotalItems(result.total || 0);
+      setTotalPages(result.totalPages || Math.ceil(result.total / ITEMS_PER_PAGE));
       
-      // ===== XỬ LÝ RESPONSE TỪ BACKEND =====
-      let booksData = [];
-      let totalCount = 0;
-      
-      // Format 1: { code: 1000, result: { content: [], totalElements: 0 } }
-      if (response.code === 1000 && response.result) {
-        booksData = response.result.content || response.result || [];
-        totalCount = response.result.totalElements || booksData.length;
-      }
-      // Format 2: { data: [], total: 0 }
-      else if (response.data) {
-        booksData = Array.isArray(response.data) ? response.data : [response.data];
-        totalCount = response.total || booksData.length;
-      }
-      // Format 3: Array trực tiếp []
-      else if (Array.isArray(response)) {
-        booksData = response;
-        totalCount = response.length;
-      }
-      // Format 4: OpenLibrary format
-      else if (response.docs) {
-        booksData = response.docs;
-        totalCount = response.numFound || booksData.length;
-      } else if (response.works) {
-        booksData = response.works;
-        totalCount = response.work_count || booksData.length;
-      }
-      
-      console.log('📚 Processed books:', {
-        count: booksData.length,
-        total: totalCount,
-        firstBook: booksData[0]?.title || 'N/A'
-      });
-      
-      setBooks(booksData);
-      setPagination({
-        currentPage: pagination.currentPage,
-        totalPages: Math.ceil(totalCount / itemsPerPage) || 1,
-        totalItems: totalCount,
-      });
-      
-      console.log('✅ Books loaded successfully');
+      console.log("✅ Books loaded:", result.data?.length);
     } catch (error) {
-      console.error('❌ Error fetching books:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      console.error("❌ Error loading books:", error);
       setBooks([]);
-      setPagination({
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: 0,
-      });
+      setTotalItems(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
-  }, [fetchFunction, fetchParams, itemsPerPage, pagination.currentPage, enableSort, filters.sort]);
-
-  useEffect(() => {
-    fetchBooks();
-  }, [fetchBooks]);
-
-  const handleFilterChange = (newFilters) => {
-    console.log('🎛️ Filter changed:', newFilters);
-    setFilters(prev => ({ ...prev, ...newFilters }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
   const handlePageChange = (page) => {
-    console.log('📄 Page changed to:', page);
-    setPagination(prev => ({ ...prev, currentPage: page }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  return (
-    <div className={`min-h-screen bg-[#E9E7E0] ${className}`}>
-      {/* Header Section */}
-      {showHeader && (
-        <div className="bg-[#F9F8F4] border border-dotted border-neutral-400 rounded-sm relative mx-auto max-w-7xl mt-[20px] mb-8">
-          <div className="text-center px-8 py-10 text-neutral-800">
-            <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
-              {title}
-            </h1>
-            {description && (
-              <p className="text-neutral-600 mb-6">{description}</p>
-            )}
-            
-            {/* Filters & Sort */}
-            {(showFilters || enableSort) && (
-              <div className="flex flex-wrap gap-4 items-center justify-center">
-                {/* Filters */}
-                {showFilters && filterOptions.length > 0 && (
-                  <div className="flex gap-2">
-                    {filterOptions.map(option => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleFilterChange({ [option.key]: option.value })}
-                        className={`px-4 py-2 rounded-md transition-colors ${
-                          filters[option.key] === option.value
-                            ? 'bg-neutral-900 text-white'
-                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Sort */}
-                {enableSort && sortOptions.length > 0 && (
-                  <select
-                    value={filters.sort}
-                    onChange={(e) => handleFilterChange({ sort: e.target.value })}
-                    className="px-4 py-2 border border-neutral-300 rounded-md bg-white"
-                  >
-                    {sortOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            )}
-            
-            {/* Results Count */}
-            {!loading && (
-              <p className="mt-4 text-sm text-neutral-600">
-                Showing {books.length} of {pagination.totalItems} books
-              </p>
-            )}
+  // Loading State
+  if (loading) {
+    return (
+      <div>
+        {/* Header Info */}
+        <div className="bg-[#E9E7E0] border border-dotted border-neutral-400 rounded-sm relative mx-auto max-w-7xl mt-[20px] mb-8">
+          <div className="text-center px-8 py-10">
+            <div className="h-10 w-96 bg-neutral-200 rounded animate-pulse mx-auto mb-4"></div>
+            <div className="h-6 w-64 bg-neutral-200 rounded animate-pulse mx-auto"></div>
           </div>
         </div>
-      )}
+
+        {/* Loading Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+          {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
+              <div className="h-4 bg-neutral-200 rounded mb-2"></div>
+              <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        {loading ? (
-          // Loading State
-          <div className={`grid ${gridCols} gap-6`}>
-            {[...Array(itemsPerPage)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-[2/3] bg-neutral-200 rounded-sm mb-3"></div>
-                <div className="h-4 bg-neutral-200 rounded mb-2"></div>
-                <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
-              </div>
+      {books.length === 0 ? (
+        // Empty State
+        <div className="text-center py-16">
+          <svg
+            className="w-16 h-16 mx-auto text-neutral-300 mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 className="text-lg font-semibold text-neutral-700 mb-2">
+            No books found
+          </h3>
+          <p className="text-neutral-500 mb-4">
+            {searchQuery
+              ? `No results found for "${searchQuery}". Try different keywords.`
+              : "Try adjusting your filters or search query"}
+          </p>
+          {searchQuery ? (
+            <Link
+              href="/books"
+              className="px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-700 transition-colors inline-block"
+            >
+              Browse all books
+            </Link>
+          ) : (
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-700 transition-colors"
+            >
+              Refresh
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Books Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+            {books.map((book, index) => (
+              <BookCard key={book.id || index} book={book} />
             ))}
           </div>
-        ) : books.length === 0 ? (
-          // Empty State
-          <div className="text-center py-16">
-            <svg className="w-16 h-16 mx-auto text-neutral-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            <h3 className="text-lg font-semibold text-neutral-700 mb-2">
-              {emptyMessage}
-            </h3>
-            {emptyActionText && (
-              <button
-                onClick={onEmptyAction || (() => window.location.href = '/books')}
-                className="px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-700 transition-colors"
-              >
-                {emptyActionText}
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            {/* Books Grid */}
-            <div className={`grid ${gridCols} gap-6`}>
-              {books.map((book, index) => (
-                <BookCard 
-                  key={book.id || book.bookId || index} 
-                  book={book} 
-                />
-              ))}
-            </div>
 
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="mt-8">
-                <Pagination
-                  currentPage={pagination.currentPage}
-                  totalPages={pagination.totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-8">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </>
   );
 }

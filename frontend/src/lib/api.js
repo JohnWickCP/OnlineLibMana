@@ -32,10 +32,9 @@ api.interceptors.request.use(
   }
 );
 
-// RESPONSE INTERCEPTOR (CHỈ GIỮ 1 INTERCEPTOR)
+// RESPONSE INTERCEPTOR
 api.interceptors.response.use(
   (response) => {
-    // ✅ Chỉ log khi ở client và trong development
     const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
     if (isDev) {
       console.log('✅ API Response:', response.status, response.config.url);
@@ -43,7 +42,6 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // ✅ Tự động clear auth khi token hết hạn/invalid
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('authToken');
@@ -51,8 +49,6 @@ api.interceptors.response.use(
         localStorage.removeItem('userRole');
       }
     }
-    
-    // ✅ Không log error nữa, để UI component xử lý
     return Promise.reject(error);
   }
 );
@@ -87,7 +83,6 @@ export const authAPI = {
       
       return response.data;
     } catch (error) {
-      // ✅ Error đã được xử lý trong interceptor, chỉ throw lại
       throw error;
     }
   },
@@ -127,8 +122,8 @@ export const booksAPI = {
   getAllBooksWithPagination: async (page = 0, size = 24) => {
     const response = await api.get('/book/listbooks', {
       params: {
-        page: page,  // Backend dùng 0-indexed (0, 1, 2, ...)
-        size: size   // Số items mỗi trang
+        page: page,
+        size: size
       }
     });
     return response.data;
@@ -191,10 +186,11 @@ export const userAPI = {
     const response = await api.post(`/home/addFB/${bookId}/favourites/${listId}`);
     return response.data;
   },
+
   addBookToFolder: async (folderName, bookId) => {
-  const response = await api.post(`/home/addBookToFolder/${folderName}/${bookId}`);
-  return response.data;
-},
+    const response = await api.post(`/home/addBookToFolder/${folderName}/${bookId}`);
+    return response.data;
+  },
 
   addBookByStatus: async (bookId, status) => {
     const response = await api.post(`/home/addBookByStatus/${bookId}/${status}`);
@@ -202,7 +198,12 @@ export const userAPI = {
   },
 
   getFolderById: async (listId) => {
-    const response = await api.get(`/home/books/${listId}`);
+    const response = await api.get(`/home/fb/${listId}`);
+    return response.data;
+  },
+
+  getCountBook: async (status) => {
+    const response = await api.get(`/home/countBook/${status}`);
     return response.data;
   },
 
@@ -212,16 +213,16 @@ export const userAPI = {
   },
 
   deleteFolder: async (folderId) => {
-    const res = await API.delete(`/home/deleteFBfolder/${folderId}`);
-    return res.data;
+    const response = await api.delete(`/home/deleteFBfolder/${folderId}`);
+    return response.data;
   },
 
+  // ✅ SỬA: Đúng endpoint theo API docs
   removeBookFromFolder: async (folderId, bookId) => {
-    const res = await API.delete(`/home/fb/${folderId}/${bookId}`);
-    return res.data;
+    const response = await api.delete(`/home/fb/${folderId}/${bookId}`);
+    return response.data;
   },
 };
-
 
 // ADMIN APIs
 export const adminAPI = {
