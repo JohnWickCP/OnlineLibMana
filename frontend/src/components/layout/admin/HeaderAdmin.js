@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "lucide-react";
 import { AuthContext } from "@/components/provider/AuthProvider";
@@ -9,10 +9,17 @@ import { AuthContext } from "@/components/provider/AuthProvider";
 export default function HeaderAdmin() {
   const router = useRouter();
   const { isAuthenticated, logout } = useContext(AuthContext);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    logout(); // Xóa token, user info trong localStorage, set auth = false
-    router.push("/admin/login"); // Chuyển hướng về trang login admin
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout(); // Xóa token + user info
+      router.push("/admin/login"); // Chuyển hướng về trang login
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -49,15 +56,28 @@ export default function HeaderAdmin() {
               </Link>
             </li>
 
-            {/* Logout button hiển thị nếu đã đăng nhập */}
-            {isAuthenticated && (
+            {/* ✅ Nếu chưa đăng nhập thì hiện Login */}
+            {!isAuthenticated ? (
+              <li>
+                <Link
+                  href="/admin/login"
+                  className="px-4 py-2 bg-gray-200 rounded-full text-black hover:bg-gray-300 transition font-medium"
+                >
+                  Login
+                </Link>
+              </li>
+            ) : (
+              // ✅ Nếu đã đăng nhập thì hiện Logout
               <li>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-200 rounded-full text-black hover:bg-gray-300 transition"
+                  disabled={isLoggingOut}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-200 rounded-full text-black hover:bg-gray-300 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <User className="w-5 h-5" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <span className="hidden sm:inline">
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </span>
                 </button>
               </li>
             )}

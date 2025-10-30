@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { booksAPI } from "@/lib/api";
 
 export default function AddBookPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
@@ -17,6 +19,7 @@ export default function AddBookPage() {
     coverImage: "",
     fileUrl: "",
     language: "Vietnamese",
+    subject: "",
   });
 
   const categories = [
@@ -32,19 +35,10 @@ export default function AddBookPage() {
     "Truyện tranh",
   ];
 
-  const languages = [
-    "Vietnamese",
-    "English",
-    "French",
-    "Japanese",
-    "Korean",
-    "Chinese",
-  ];
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    setError(null); // Clear error khi user nhập
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -71,34 +65,24 @@ export default function AddBookPage() {
         description: form.description.trim() || "Chưa có mô tả",
         category: form.category || "Chưa phân loại",
         coverImage: form.coverImage.trim() || "https://via.placeholder.com/400x600?text=No+Cover",
-        fileUrl: form.fileUrl.trim() || "",
-        language: form.language,
+        fileUrl: form.fileUrl.trim(),
+        language: form.language.trim() || "Vietnamese",
+        subject: form.subject.trim() || "Chưa xác định",
         createdAt: new Date().toISOString(),
       };
 
       console.log("📤 Đang gửi data:", bookData);
 
-      // Gọi API thêm sách
       const response = await booksAPI.addBook(bookData);
       
       console.log("✅ Response:", response);
 
-      // Hiển thị thông báo thành công
       setSuccess(true);
 
-      // Reset form sau 2 giây
+      // Chuyển về trang danh sách sau 1.5 giây
       setTimeout(() => {
-        setSuccess(false);
-        setForm({
-          title: "",
-          author: "",
-          description: "",
-          category: "",
-          coverImage: "",
-          fileUrl: "",
-          language: "Vietnamese",
-        });
-      }, 2000);
+        router.push('/admin/books');
+      }, 1500);
 
     } catch (err) {
       console.error("❌ Lỗi khi thêm sách:", err);
@@ -110,6 +94,21 @@ export default function AddBookPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    setForm({
+      title: "",
+      author: "",
+      description: "",
+      category: "",
+      coverImage: "",
+      fileUrl: "",
+      language: "Vietnamese",
+      subject: "",
+    });
+    setError(null);
+    setSuccess(false);
   };
 
   return (
@@ -178,19 +177,30 @@ export default function AddBookPage() {
               <label className="block text-gray-700 font-medium mb-2">
                 Ngôn ngữ
               </label>
-              <select
+              <input
+                type="text"
                 name="language"
                 value={form.language}
                 onChange={handleChange}
+                placeholder="Ví dụ: Vietnamese, English, Tiếng Việt..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
-              >
-                {languages.map((lang) => (
-                  <option key={lang} value={lang}>
-                    {lang}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
+          </div>
+
+          {/* Subject */}
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              Chủ đề
+            </label>
+            <input
+              type="text"
+              name="subject"
+              value={form.subject}
+              onChange={handleChange}
+              placeholder="Ví dụ: Phiêu lưu, Giả tưởng, Học tập..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+            />
           </div>
 
           {/* Description */}
@@ -224,6 +234,19 @@ export default function AddBookPage() {
             <p className="text-xs text-gray-500 mt-1">
               Nếu để trống, sẽ sử dụng ảnh mặc định
             </p>
+            {form.coverImage && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                <img 
+                  src={form.coverImage} 
+                  alt="Preview" 
+                  className="w-32 h-48 object-cover rounded-lg border border-gray-300"
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/400x600?text=Invalid+Image";
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* File URL */}
@@ -256,11 +279,11 @@ export default function AddBookPage() {
           {success && (
             <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3 animate-slideIn">
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">Thêm sách thành công!</span>
+              <span className="text-sm font-medium">Thêm sách thành công! Đang chuyển hướng...</span>
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit Buttons */}
           <div className="flex gap-4">
             <button
               type="submit"
@@ -279,21 +302,20 @@ export default function AddBookPage() {
 
             <button
               type="button"
-              onClick={() => {
-                setForm({
-                  title: "",
-                  author: "",
-                  description: "",
-                  category: "",
-                  coverImage: "",
-                  fileUrl: "",
-                  language: "Vietnamese",
-                });
-                setError(null);
-              }}
-              className="px-6 py-3 border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-medium rounded-lg transition"
+              onClick={handleReset}
+              disabled={loading}
+              className="px-6 py-3 border-2 border-gray-300 hover:border-gray-400 disabled:border-gray-200 disabled:text-gray-400 text-gray-700 font-medium rounded-lg transition"
             >
               Xóa
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push('/admin/books')}
+              disabled={loading}
+              className="px-6 py-3 border-2 border-gray-300 hover:border-gray-400 disabled:border-gray-200 disabled:text-gray-400 text-gray-700 font-medium rounded-lg transition"
+            >
+              Hủy
             </button>
           </div>
         </form>
