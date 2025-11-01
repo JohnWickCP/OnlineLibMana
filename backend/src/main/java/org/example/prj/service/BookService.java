@@ -6,18 +6,24 @@ import org.example.prj.DTO.Request.BookRequest;
 import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
 import org.example.prj.entity.Book;
+import org.example.prj.entity.Count;
 import org.example.prj.entity.Review;
 import org.example.prj.exception.AppException;
 import org.example.prj.exception.ErrorCode;
 import org.example.prj.repository.BookRepository;
+import org.example.prj.repository.CountRepository;
+import org.example.prj.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 @Service
@@ -25,6 +31,10 @@ import java.util.List;
 public class BookService {
     @Autowired
     private BookRepository bookRepository;
+    @Autowired
+    private CountRepository countRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     public BookResponse getBook(Long bookId) {
         Book book = bookRepository.getBookById(bookId)
@@ -145,6 +155,28 @@ public class BookService {
                     return average;
                 })
                 .orElse(0.0);
+    }
+
+    // Biến tạm lưu view hiện tại (trong tháng này)
+    private final AtomicLong currentViewCount = new AtomicLong(0);
+
+    // Khi gọi API /views => view +1
+    public Long countViews() {
+        return currentViewCount.incrementAndGet();
+    }
+
+    // Hàm chạy tự động mỗi tháng để tạo bản ghi mới
+    public void createMonthlyCountRecord() {
+        Long newUsers = userRepository.countNewUsersInLastMonth();
+        Long totalViews = currentViewCount.getAndSet(0); // lấy số hiện tại rồi reset
+
+        Count count = Count.builder()
+                .newUsersQuantity(newUsers)
+                .viewsQuantity(totalViews)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        countRepository.save(count);
     }
 
 }

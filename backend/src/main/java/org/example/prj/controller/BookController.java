@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
 
 @RestController
@@ -75,6 +76,14 @@ public class BookController {
     public ApiResponse<Double> displayRating(@PathVariable Long bookId){
         return ApiResponse.<Double>builder()
                 .result(bookService.displayRating(bookId))
+                .build();
+    }
+
+//    Count view(Admin)
+    @PostMapping("/views")
+    public ApiResponse<Long> countViews(){
+        return ApiResponse.<Long>builder()
+                .result(bookService.countViews())
                 .build();
     }
 }
