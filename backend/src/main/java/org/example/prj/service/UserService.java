@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import org.example.prj.DTO.Request.TilteFolder;
 import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
+import org.example.prj.DTO.Response.ListUserResponse;
 import org.example.prj.constant.StatusBook;
 import org.example.prj.entity.*;
 import org.example.prj.exception.AppException;
@@ -38,6 +39,36 @@ public class UserService {
     private BookshelfItemRepository bookshelfItemRepository;
     @Autowired
     private BookshelfRepository bookshelfRepository;
+
+
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
+    public List<ListUserResponse> getListUsers(Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> users = userRepository.findAll(pageable);
+
+        return users.stream()
+                .map(user -> {
+                    ListUserResponse listUserResponse = new ListUserResponse();
+                    listUserResponse.setId(user.getId());
+                    listUserResponse.setUsername(user.getUsername());
+                    listUserResponse.setEmail(user.getEmail());
+                    listUserResponse.setActive(user.isActive());
+                    listUserResponse.setCreatedAt(user.getCreatedAt());
+
+                    Long want = countBook("WANT", user, null);
+                    listUserResponse.setWantQuantity(want);
+
+                    Long reading = countBook("READING", user, null);
+                    listUserResponse.setReadingQuantity(reading);
+
+                    Long completed = countBook("COMPLETED", user, null);
+                    listUserResponse.setCompletedQuantity(completed);
+
+                    return listUserResponse;
+                })
+                .toList();
+    }
+
 
     @PreAuthorize("isAuthenticated()")
     public String addReviewBook(Long bookId, double point) {
@@ -84,7 +115,7 @@ public class UserService {
 //        favouriteBooks.setBook(book);
         user.getFavouriteBooks().add(favouriteBooks);
         favouriteRepository.save(favouriteBooks);
-        return "Create Successful:" + tilteFolder.getTitle();
+        return "Create Successful:" + tilteFolder.getTitle() + " ";
     }
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
@@ -319,17 +350,28 @@ public class UserService {
 
 
 //    Count book depend on mode
-    public Long countBook(String mode,User user,Long listId) {
-        Long count;
-        if(mode.equals("FB")){
-            count= user.getFavouriteBooks().stream().filter(fb->
-                    fb.getId()==listId).findFirst().get().getBooks().stream().count();
-            return count;
-        }else{
-            count = user.getBookshelf().getItems().stream()
-                    .filter(bsi -> bsi.getStatus() == StatusBook.valueOf(mode))
-                    .count();
-            return count;
-        }
+public Long countBook(String mode, User user, Long listId) {
+    if (user == null) {
+        return 0L;
     }
+    if (mode.equals("FB")) {
+        // Nếu FavouriteBooks có thể null
+        if (user.getFavouriteBooks() == null) {
+            return 0L;
+        }
+        return user.getFavouriteBooks().stream()
+                .filter(fb -> fb.getId().equals(listId))
+                .findFirst()
+                .map(fb -> (long) fb.getBooks().size())
+                .orElse(0L);
+    } else {
+        if (user.getBookshelf() == null || user.getBookshelf().getItems() == null) {
+            return 0L;
+        }
+        return user.getBookshelf().getItems().stream()
+                .filter(bsi -> bsi.getStatus() == StatusBook.valueOf(mode))
+                .count();
+    }
+}
+
 }
