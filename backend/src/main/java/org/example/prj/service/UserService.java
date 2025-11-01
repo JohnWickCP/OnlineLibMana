@@ -373,5 +373,4 @@ public Long countBook(String mode, User user, Long listId) {
                 .count();
     }
 }
-
 }

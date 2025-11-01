@@ -5,6 +5,7 @@ import org.example.prj.entity.Count;
 import org.example.prj.entity.Dashboard;
 import org.example.prj.repository.BookRepository;
 import org.example.prj.repository.CountRepository;
+import org.example.prj.repository.DashBoardRepository;
 import org.example.prj.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,9 +21,12 @@ public class AdminService {
     private BookRepository bookRepository;
     @Autowired
     private CountRepository countRepository;
+    @Autowired
+    private DashBoardRepository dashBoardRepository;
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
     public Dashboard getDashboard(){
+
         Dashboard dashboard = new Dashboard();
         dashboard.setTotalBooks(bookRepository.count());
         dashboard.setNewUsersQuantity(userRepository.countNewUsersInLastMonth());
@@ -33,6 +37,7 @@ public class AdminService {
 //        dashboard.setTotalUsers(userRepository.findAll().size());
 //        Count dashboard = new Count();
 //        dashboard.setView(countRepository.);
+        dashBoardRepository.save(dashboard);
         return dashboard;
     }
 }

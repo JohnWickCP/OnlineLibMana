@@ -33,8 +33,6 @@ public class BookService {
     private BookRepository bookRepository;
     @Autowired
     private CountRepository countRepository;
-    @Autowired
-    private UserRepository userRepository;
 
     public BookResponse getBook(Long bookId) {
         Book book = bookRepository.getBookById(bookId)
@@ -155,28 +153,6 @@ public class BookService {
                     return average;
                 })
                 .orElse(0.0);
-    }
-
-    // Biến tạm lưu view hiện tại (trong tháng này)
-    private final AtomicLong currentViewCount = new AtomicLong(0);
-
-    // Khi gọi API /views => view +1
-    public Long countViews() {
-        return currentViewCount.incrementAndGet();
-    }
-
-    // Hàm chạy tự động mỗi tháng để tạo bản ghi mới
-    public void createMonthlyCountRecord() {
-        Long newUsers = userRepository.countNewUsersInLastMonth();
-        Long totalViews = currentViewCount.getAndSet(0); // lấy số hiện tại rồi reset
-
-        Count count = Count.builder()
-                .newUsersQuantity(newUsers)
-                .viewsQuantity(totalViews)
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        countRepository.save(count);
     }
 
 }
