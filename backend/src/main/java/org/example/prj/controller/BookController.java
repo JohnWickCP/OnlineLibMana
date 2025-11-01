@@ -5,10 +5,11 @@ import org.example.prj.DTO.Response.ApiResponse;
 import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
 import org.example.prj.service.BookService;
+import org.example.prj.service.CountService;
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
 
 @RestController
@@ -16,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 public class BookController {
 
     private final BookService bookService;
-    public BookController(BookService bookService) {
+    private final CountService countService;
+    public BookController(BookService bookService, CountService countService) {
         this.bookService = bookService;
+        this.countService = countService;
     }
 
 //    Display book when click book(public)
@@ -75,6 +78,14 @@ public class BookController {
     public ApiResponse<Double> displayRating(@PathVariable Long bookId){
         return ApiResponse.<Double>builder()
                 .result(bookService.displayRating(bookId))
+                .build();
+    }
+
+//    Count view(Admin)
+    @PostMapping("/views")
+    public ApiResponse<Long> countViews(){
+        return ApiResponse.<Long>builder()
+                .result(countService.countViews())
                 .build();
     }
 }

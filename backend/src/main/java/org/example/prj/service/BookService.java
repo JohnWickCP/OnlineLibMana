@@ -6,18 +6,24 @@ import org.example.prj.DTO.Request.BookRequest;
 import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
 import org.example.prj.entity.Book;
+import org.example.prj.entity.Count;
 import org.example.prj.entity.Review;
 import org.example.prj.exception.AppException;
 import org.example.prj.exception.ErrorCode;
 import org.example.prj.repository.BookRepository;
+import org.example.prj.repository.CountRepository;
+import org.example.prj.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 @Service
@@ -25,6 +31,8 @@ import java.util.List;
 public class BookService {
     @Autowired
     private BookRepository bookRepository;
+    @Autowired
+    private CountRepository countRepository;
 
     public BookResponse getBook(Long bookId) {
         Book book = bookRepository.getBookById(bookId)

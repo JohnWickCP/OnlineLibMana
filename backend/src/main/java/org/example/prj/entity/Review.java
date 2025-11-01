@@ -15,12 +15,7 @@ public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private double rating;
-
-    @Column(columnDefinition = "TEXT")
-    private String comment;
-
     private LocalDateTime createdAt;
 
     @ManyToOne
