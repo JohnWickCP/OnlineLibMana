@@ -2,8 +2,6 @@ package org.example.prj.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.prj.DTO.Request.TokenRequest;
-import org.example.prj.DTO.Response.AuthenticationResponse;
 import org.example.prj.entity.User;
 import org.example.prj.exception.AppException;
 import org.example.prj.exception.ErrorCode;
@@ -11,7 +9,6 @@ import org.example.prj.repository.UserRepository;
 import org.example.prj.service.AuthenticationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 
 @RestController
 @RequestMapping("/magic")
@@ -22,32 +19,32 @@ public class MagicLoginController {
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
 
-    @GetMapping("/login")
-    public ResponseEntity<AuthenticationResponse> loginWithMagicLink(@RequestBody TokenRequest request) {
-        String token = request.getToken();
+    @GetMapping("/login/token={token}")
+    public ResponseEntity<Void> loginWithMagicLink(@PathVariable("token") String token) {
         try {
             var jwt = authenticationService.verifyToken(token, false);
-
             String username = jwt.getJWTClaimsSet().getSubject();
+
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-            // Kích hoạt tài khoản
+            // Kích hoạt tài khoản nếu chưa kích hoạt
             if (!user.isActive()) {
                 user.setActive(true);
                 userRepository.save(user);
             }
 
-            // Sinh JWT để login thẳng
-            String newToken = authenticationService.generateToken(user);
+            // Chuyển hướng về trang login FE
+            return ResponseEntity.status(302)
+                    .header("Location", "http://localhost:3000/login")
+                    .build();
 
-            return ResponseEntity.ok(AuthenticationResponse.builder()
-                    .success(true)
-                    .token(newToken)
-                    .build());
         } catch (Exception e) {
             log.error("Magic login failed", e);
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            // Nếu token sai hoặc hết hạn → redirect về trang lỗi
+            return ResponseEntity.status(302)
+                    .header("Location", "http://localhost:3000/login?activated=false")
+                    .build();
         }
     }
 }

@@ -33,7 +33,8 @@ public class SecurityConfig {
             "/api/auth/logout",
             "/auth/login",
             "/book/{title}",
-            "book/listbooks",
+            "/book/listbooks",
+            "/magic/login/**",
 
             // ✅ Thêm whitelist cho Swagger
             "/swagger-ui/**",
