@@ -1,6 +1,9 @@
 package org.example.prj.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -11,16 +14,11 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Dashboard {
+public class Count {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long totalUsers;
+    private Long viewsQuantity;
     private Long newUsersQuantity;
-    private Long totalBooks;
-    private Long view;
-    private LocalDateTime startDay;
-    // getters and setters
+    private LocalDateTime timestamp;
 }
-
-//tong so sach,users,view(trong 1 thang-so sanh
