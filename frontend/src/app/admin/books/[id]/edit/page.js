@@ -129,7 +129,7 @@ export default function EditBookPage() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push(`/books/${id}`);
+        router.push(`/admin/books/${id}`);
       }, 1500);
     } catch (err) {
       console.error("❌ Lỗi khi cập nhật sách:", err);

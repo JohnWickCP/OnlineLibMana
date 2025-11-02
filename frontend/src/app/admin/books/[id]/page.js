@@ -97,18 +97,7 @@ function BookDetailContent() {
   // Render main content
   return (
     <div className="min-h-screen bg-[#E9E7E0]">
-      {/* Header */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="container mx-auto px-4 py-6">
-          <Link
-            href="/admin/books"
-            className="text-neutral-600 hover:text-neutral-900 flex items-center gap-2 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back to Books</span>
-          </Link>
-        </div>
-      </div>
+
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">

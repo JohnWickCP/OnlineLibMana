@@ -1,11 +1,3 @@
-/**
- * components/auth/UserRegisterForm.js
- * Form đăng ký tài khoản User
- * - Gọi API register backend
- * - Lưu token vào localStorage
- * - Redirect đến /dashboard sau khi đăng ký thành công
- */
-
 "use client";
 
 import { useState } from "react";
@@ -13,20 +5,21 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/InputLogin";
 import { authAPI } from "@/lib/api";
-import { Link } from "lucide-react";
+import Link from "next/link";
 
 export default function UserRegisterForm() {
   const router = useRouter();
-  
+
   // ===== STATE =====
   const [formData, setFormData] = useState({
     username: "",
     email: "",
-    password: ""
+    password: "",
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // ===== HANDLE INPUT CHANGE =====
   const handleChange = (e) => {
@@ -35,63 +28,76 @@ export default function UserRegisterForm() {
       ...prev,
       [id]: value,
     }));
-    // Clear error khi user gõ
+    // ✅ Clear error/success khi user thay đổi input
     if (error) setError("");
+    if (success) setSuccess("");
   };
 
   // ===== HANDLE SUBMIT =====
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
+
+    // ✅ Kiểm tra dữ liệu nhập
     if (!formData.username || !formData.email || !formData.password) {
       setError("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
-    // Kiểm tra độ dài password
+    // ✅ Kiểm tra độ dài password
     if (formData.password.length < 6) {
       setError("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    // ✅ Kiểm tra định dạng email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Email không hợp lệ");
       return;
     }
 
     try {
       setLoading(true);
       setError("");
-      
+      setSuccess("");
+
       console.log("📝 Đang đăng ký tài khoản...");
 
-      // Gọi API register
+      // ✅ Gọi API register
       const response = await authAPI.register({
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        screenName: formData.username, // Dùng username làm screenName
+        screenName: formData.username,
       });
 
-      // Kiểm tra response có token và user không
-      if (!response.token || !response.user) {
-        throw new Error("Phản hồi từ server không hợp lệ");
+      console.log("📩 Phản hồi từ server:", response);
+
+      // ❌ Nếu có lỗi từ API
+      if (!response.success) {
+        setError(response.message);
+        return;
       }
 
-      // Lưu token và user info vào localStorage
-      localStorage.setItem("auth_token", response.token);
-      localStorage.setItem("user_info", JSON.stringify(response.user));
+      // ✅ Đăng ký thành công
+      console.log("✅ Đăng ký thành công!");
+      setSuccess("Vui lòng kiểm tra email để kích hoạt tài khoản của bạn.");
 
-      console.log("✅ Đăng ký thành công:", response.user.email);
+      // ✅ Reset form
+      setFormData({
+        username: "",
+        email: "",
+        password: "",
+      });
 
-      // Redirect đến /dashboard
-      router.push("/dashboard");
+      // ✅ Chuyển hướng sau 2 giây
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 2000);
+
     } catch (err) {
-      console.error("❌ Lỗi đăng ký:", err);
-      
-      // Hiển thị error message
-      const errorMessage = 
-        err.response?.data?.message || 
-        err.message || 
-        "Đăng ký thất bại. Email có thể đã được sử dụng.";
-      
-      setError(errorMessage);
+      console.error("❌ Lỗi không mong đợi:", err);
+      setError("Đăng ký thất bại. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -99,14 +105,27 @@ export default function UserRegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      {/* Error Message */}
+      {/* ===== ERROR MESSAGE ===== */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          <p className="text-sm">{error}</p>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⚠️</span>
+            <p className="text-sm font-medium">{error}</p>
+          </div>
         </div>
       )}
 
-      {/* Username Input - Ô đầu tiên */}
+      {/* ===== SUCCESS MESSAGE ===== */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">✅</span>
+            <p className="text-sm font-medium">{success}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ===== USERNAME INPUT ===== */}
       <Input
         id="username"
         label="Username"
@@ -118,7 +137,7 @@ export default function UserRegisterForm() {
         placeholder="Enter your username"
       />
 
-      {/* Email Input */}
+      {/* ===== EMAIL INPUT ===== */}
       <Input
         id="email"
         label="Email"
@@ -130,7 +149,7 @@ export default function UserRegisterForm() {
         placeholder="Enter your email"
       />
 
-      {/* Password Input */}
+      {/* ===== PASSWORD INPUT ===== */}
       <Input
         id="password"
         label="Password"
@@ -142,42 +161,39 @@ export default function UserRegisterForm() {
         placeholder="At least 6 characters"
       />
 
-      {/* Submit Button - cách ô password 50px */}
-      <Button 
-        type="submit" 
-        className="mt-[50px]"
-        disabled={loading}
-      >
+      {/* ===== SUBMIT BUTTON ===== */}
+      <Button type="submit" className="mt-[50px]" disabled={loading}>
         {loading ? (
           <span className="flex items-center justify-center gap-2">
             <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-              <circle 
-                className="opacity-25" 
-                cx="12" 
-                cy="12" 
-                r="10" 
-                stroke="currentColor" 
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
                 strokeWidth="4"
                 fill="none"
               />
-              <path 
-                className="opacity-75" 
-                fill="currentColor" 
+              <path
+                className="opacity-75"
+                fill="currentColor"
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            Đang đăng ký...
+            <span>Đang đăng ký...</span>
           </span>
         ) : (
           "Sign Up"
         )}
       </Button>
 
+      {/* ===== LOGIN LINK ===== */}
       <p className="text-center text-gray-700 mt-6">
         Already have an account?{" "}
         <Link
           href="/auth/login"
-          className="text-gray-700 hover:text-gray-900 underline font-medium"
+          className="text-blue-600 hover:text-blue-800 underline font-medium transition-colors"
         >
           Log in now
         </Link>
