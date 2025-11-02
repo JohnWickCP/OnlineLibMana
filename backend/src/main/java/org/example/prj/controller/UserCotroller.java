@@ -7,7 +7,7 @@ import org.example.prj.DTO.Request.TilteFolder;
 import org.example.prj.DTO.Response.ApiResponse;
 import org.example.prj.DTO.Response.BookDisplayResponse;
 import org.example.prj.DTO.Response.BookResponse;
-import org.example.prj.entity.User;
+import org.example.prj.DTO.Response.ListUserResponse;
 import org.example.prj.repository.UserRepository;
 import org.example.prj.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +31,14 @@ public class UserCotroller {
     @Autowired
     private RestClient.Builder builder;
 
-    //    Test
+    //  List User
     @GetMapping("/listUser")
-    public List<User> getUsers() {
-        return userRepository.findAll();
+    public ApiResponse<List<ListUserResponse>> getUsers(@RequestParam(defaultValue = "0") Integer page,
+                                                        @RequestParam(defaultValue = "20") Integer size) {
+        return ApiResponse.<List<ListUserResponse>>builder()
+                .result(userService.getListUsers(page,size))
+                .build();
     }
-
 
 //    Book review
     @PostMapping("/reviewBook/{bookId}")

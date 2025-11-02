@@ -8,8 +8,7 @@ import org.example.prj.exception.AppException;
 import org.example.prj.exception.ErrorCode;
 import org.example.prj.repository.RoleRepository;
 import org.example.prj.repository.UserRepository;
-import org.example.prj.service.AuthenticationService;
-import org.example.prj.service.EmailService;
+import org.example.prj.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -18,12 +17,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class RegisterController {
-
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final CountService countService;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
@@ -43,6 +42,7 @@ public class RegisterController {
                 .email(request.getEmail())
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .createdAt(LocalDateTime.now())
                 .active(false)
                 .role(role)
                 .build();
@@ -59,6 +59,14 @@ public class RegisterController {
                 magicLink
         );
 
+
+        emailService.sendEmail(
+                newUser.getEmail(),
+                "Xác thực tài khoản",
+                magicLink
+        );
+        // Cộng bộ đếm ngay
+        countService.incrementNewUserCount();
         return ResponseEntity.ok("Vui lòng kiểm tra email để xác thực tài khoản.");
     }
 }
