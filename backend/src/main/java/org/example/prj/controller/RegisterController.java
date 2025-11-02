@@ -12,7 +12,6 @@ import org.example.prj.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDateTime;
 
 @RestController
@@ -54,6 +53,13 @@ public class RegisterController {
         // Sinh token magic link
         String token = authenticationService.generateToken(newUser);
         String magicLink = "http://localhost:8081/magic/login/token=" + token;
+
+        emailService.sendEmail(
+                newUser.getEmail(),
+                "Xác thực tài khoản",
+                magicLink
+        );
+
 
         emailService.sendEmail(
                 newUser.getEmail(),

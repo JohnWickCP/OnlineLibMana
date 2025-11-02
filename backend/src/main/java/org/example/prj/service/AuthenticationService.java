@@ -58,6 +58,9 @@ public class AuthenticationService {
         if(!authenticated) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
+        if(!user.isActive()){
+            throw new AppException(ErrorCode.ACCOUNT_NOT_ACTIVE);
+        }
 
         var token = generateToken(user);
         return AuthenticationResponse.builder()
@@ -145,18 +148,18 @@ public class AuthenticationService {
     }
 
 
-    public ChangePasswordResponse changePassword(ChangePasswordRequest changePasswordRequest) throws ParseException, JOSEException {
-        SignedJWT signedJWT = verifyToken(changePasswordRequest.getToken(),true);
-        String username = signedJWT.getJWTClaimsSet().getSubject();
-        var user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        boolean authenticated = passwordEncoder.matches(user.getPassword(), changePasswordRequest.getOldPassword());
-        if(!authenticated) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-        user.setPassword(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
-        return ChangePasswordResponse.builder().success(true).build();
-    }
+//    public ChangePasswordResponse changePassword(ChangePasswordRequest changePasswordRequest) throws ParseException, JOSEException {
+//        SignedJWT signedJWT = verifyToken(changePasswordRequest.getToken(),true);
+//        String username = signedJWT.getJWTClaimsSet().getSubject();
+//        var user = userRepository.findByUsername(username)
+//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+//        boolean authenticated = passwordEncoder.matches(user.getPassword(), changePasswordRequest.getOldPassword());
+//        if(!authenticated) {
+//            throw new AppException(ErrorCode.UNAUTHENTICATED);
+//        }
+//        user.setPassword(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+//        return ChangePasswordResponse.builder().success(true).build();
+//    }
 
     public SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes(StandardCharsets.UTF_8));
