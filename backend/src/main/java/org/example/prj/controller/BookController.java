@@ -83,9 +83,7 @@ public class BookController {
 
 //    Count view(Admin)
     @PostMapping("/views")
-    public ApiResponse<Long> countViews(){
-        return ApiResponse.<Long>builder()
-                .result(countService.countViews())
-                .build();
+    public void countViews(){
+        countService.incrementViewCount();
     }
 }

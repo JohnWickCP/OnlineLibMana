@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class RegisterController {
-
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final EmailService emailService;
