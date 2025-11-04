@@ -39,7 +39,7 @@ export default function BookCoverSectionAdmin({ bookData, bookId }) {
                 rel={bookData.fileUrl ? "noopener noreferrer" : ""}
                 className="w-full bg-[#608075] text-white py-2.5 rounded-md font-medium flex items-center justify-center gap-2 hover:bg-[#4a6e6f] transition-colors"
               >
-                <span>Read Book</span>
+                <span>Deleted</span>
                 <ExternalLink size={16} />
               </Link>
 

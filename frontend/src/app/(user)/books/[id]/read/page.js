@@ -2,58 +2,46 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { booksAPI } from '@/lib/api';
 
 function ReadBookContent() {
-  const params = useParams();
+  const { id } = useParams();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(5);
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     fetchBookInfo();
-  }, [params.id]);
-
-  useEffect(() => {
-    // Countdown timer
-    if (countdown > 0 && !isRedirecting) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (countdown === 0 && !isRedirecting) {
-      handleRedirect();
-    }
-  }, [countdown, isRedirecting]);
+  }, [id]);
 
   const fetchBookInfo = async () => {
     try {
       setLoading(true);
-      const response = await booksAPI.getBookById(params.id);
-      setBook(response);
-    } catch (error) {
-      console.error('Error fetching book:', error);
+      const res = await booksAPI.getBookById(id);
+      setBook(res);
+    } catch (err) {
+      console.error('❌ Error fetching book info:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRedirect = () => {
-    setIsRedirecting(true);
-    // Construct Standard Ebooks URL
-    const bookSlug = book?.title?.toLowerCase()
+  // Nếu DB không có fileUrl → fallback sang standardebooks.org
+  const buildFallbackUrl = () => {
+    const titleSlug = book?.title
+      ?.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'book';
-    const authorSlug = book?.authors?.[0]?.author?.key?.split('/').pop() || 'author';
-    
-    // Standard Ebooks format: https://standardebooks.org/ebooks/author/book-title/text/single-page
-    const readUrl = `https://standardebooks.org/ebooks/${authorSlug}/${bookSlug}/text/single-page`;
-    
-    window.location.href = readUrl;
+    const authorSlug =
+      book?.author
+        ?.toLowerCase()
+        .split(' ')[0]
+        .replace(/[^a-z0-9]+/g, '') || 'author';
+    return `https://standardebooks.org/ebooks/${authorSlug}/${titleSlug}/text/single-page`;
   };
 
-  const handleCancel = () => {
-    window.history.back();
+  const handleRedirect = () => {
+    const targetUrl = book?.fileUrl || buildFallbackUrl();
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
   if (loading) {
@@ -64,71 +52,58 @@ function ReadBookContent() {
     );
   }
 
+  if (!book) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-neutral-700">
+        <p>Book not found.</p>
+      </div>
+    );
+  }
+
+  const targetUrl = book.fileUrl || buildFallbackUrl();
+
   return (
     <div className="min-h-screen bg-[#f5f3ed] flex items-center justify-center px-4">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-12">
-        {/* Title */}
-        <h1 className="text-3xl font-serif text-neutral-700 mb-8">
-          You are being redirected to your book
+      <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-10 text-center">
+        <h1 className="text-3xl font-serif text-neutral-800 mb-6">
+          Ready to read your book
         </h1>
 
-        {/* Book Info */}
-        <div className="mb-6">
-          <p className="text-neutral-600 text-lg">
-            This book is provided by{' '}
-            <span className="font-semibold text-neutral-900">Standard Ebooks</span>
-            , a third-party Open Library Trusted Book Provider
-          </p>
-        </div>
+        <p className="text-neutral-600 text-lg mb-4">
+          This book is provided by{' '}
+          <span className="font-semibold text-neutral-900">
+            {book.fileUrl ? 'Project Gutenberg' : 'Standard Ebooks'}
+          </span>
+          .
+        </p>
 
-        {/* Countdown */}
-        <div className="mb-8">
-          <p className="text-neutral-600">
-            In <span className="font-semibold text-neutral-900">{countdown}</span> seconds, 
-            you will be automatically redirected to:{' '}
-            <a 
-              href="#"
-              className="text-blue-600 hover:underline break-all"
-              onClick={(e) => {
-                e.preventDefault();
-                handleRedirect();
-              }}
-            >
-              https://standardebooks.org/ebooks/{book?.title?.toLowerCase().replace(/\s+/g, '-')}/text/single-page
-            </a>
-          </p>
-        </div>
+        <a
+          href={targetUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline break-all"
+        >
+          {targetUrl}
+        </a>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={handleCancel}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            Cancel
-          </button>
+        <div className="mt-8 flex justify-center">
           <button
             onClick={handleRedirect}
-            className="text-blue-600 hover:underline font-medium"
+            className="bg-[#608075] text-white px-6 py-2.5 rounded-md font-medium hover:bg-[#4a635c] transition-colors"
           >
-            Continue without waiting
+            Read now
           </button>
         </div>
 
-        {/* Book Title (Optional) */}
-        {book && (
-          <div className="mt-8 pt-8 border-t border-neutral-200">
-            <p className="text-sm text-neutral-500">Reading:</p>
-            <p className="text-lg font-serif font-semibold text-neutral-900 mt-1">
-              {book.title}
-            </p>
-            {book.authors && book.authors.length > 0 && (
-              <p className="text-neutral-600 mt-1">
-                by {book.authors.map(a => a.author?.key || a.key).join(', ')}
-              </p>
-            )}
-          </div>
-        )}
+        <div className="mt-8 pt-8 border-t border-neutral-200 text-left">
+          <p className="text-sm text-neutral-500">Reading:</p>
+          <p className="text-lg font-serif font-semibold text-neutral-900 mt-1">
+            {book.title}
+          </p>
+          {book.author && (
+            <p className="text-neutral-600 mt-1">by {book.author}</p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -136,11 +111,13 @@ function ReadBookContent() {
 
 export default function ReadBookPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#f5f3ed] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#f5f3ed] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900"></div>
+        </div>
+      }
+    >
       <ReadBookContent />
     </Suspense>
   );

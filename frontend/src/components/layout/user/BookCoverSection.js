@@ -112,22 +112,21 @@ export default function BookCoverSection({ bookData, bookId }) {
   };
 
   const handleAddToCustomList = async (folder) => {
-  try {
-    setSaving(true);
-    console.log(`📚 Thêm "${bookData.id}" vào folder "${folder.id}"...`);
+    try {
+      setSaving(true);
+      console.log(`📚 Thêm "${bookData.id}" vào folder "${folder.id}"...`);
 
-    await userAPI.addBookToFavorites(bookData.id, folder.id);
+      await userAPI.addBookToFavorites(bookData.id, folder.id);
 
-    alert(`✅ Added "${bookData.title}" to folder "${folder.title}"`);
-    setOpenList(false);
-  } catch (error) {
-    console.error("❌ Lỗi khi thêm vào custom list:", error);
-    alert("Failed to add book to custom list.");
-  } finally {
-    setSaving(false);
-  }
-};
-
+      alert(`✅ Added "${bookData.title}" to folder "${folder.title}"`);
+      setOpenList(false);
+    } catch (error) {
+      console.error("❌ Lỗi khi thêm vào custom list:", error);
+      alert("Failed to add book to custom list.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleRating = async (rating) => {
     if (!isAuthenticated) {
@@ -209,12 +208,9 @@ export default function BookCoverSection({ bookData, bookId }) {
 
         {/* Action Buttons */}
         <div className="mt-6 space-y-3">
-          {/* Read Button - Luôn hiển thị */}
           <Link
-            href={bookData.fileUrl || `/books/${bookId}/read`}
-            target={bookData.fileUrl ? "_blank" : "_self"}
-            rel={bookData.fileUrl ? "noopener noreferrer" : ""}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+            href={`/books/${bookId}/read`}
+            className="w-full bg-[#608075] text-white py-2.5 rounded-md font-medium flex items-center justify-center gap-2 transition-colors"
           >
             <span>Read Book</span>
             <ExternalLink size={16} />
@@ -240,56 +236,57 @@ export default function BookCoverSection({ bookData, bookId }) {
               </button>
 
               {openList && (
-  <>
-    {/* Lớp phủ để đóng dropdown khi click ra ngoài */}
-    <div
-      className="fixed inset-0 z-10"
-      onClick={() => setOpenList(false)}
-    />
+                <>
+                  {/* Lớp phủ để đóng dropdown khi click ra ngoài */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setOpenList(false)}
+                  />
 
-    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg z-20 max-h-64 overflow-y-auto">
-      {/* --- Danh sách mặc định --- */}
-      {["Want to Read", "Currently Reading", "Already Read"].map((option) => (
-        <button
-          key={option}
-          onClick={() => handleAddToList(option)}
-          disabled={saving}
-          className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 ${
-            option === readingList
-              ? "font-semibold text-blue-600 bg-blue-50"
-              : "text-neutral-700"
-          }`}
-        >
-          {option}
-        </button>
-      ))}
+                  <div className="absolute top-full left-0 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-lg z-20 max-h-64 overflow-y-auto">
+                    {/* --- Danh sách mặc định --- */}
+                    {["Want to Read", "Currently Reading", "Already Read"].map(
+                      (option) => (
+                        <button
+                          key={option}
+                          onClick={() => handleAddToList(option)}
+                          disabled={saving}
+                          className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 ${
+                            option === readingList
+                              ? "font-semibold text-blue-600 bg-blue-50"
+                              : "text-neutral-700"
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      )
+                    )}
 
-      {/* --- Custom lists (folder của user) --- */}
-      {customLists.length > 0 && (
-        <>
-          <div className="border-t my-1" />
+                    {/* --- Custom lists (folder của user) --- */}
+                    {customLists.length > 0 && (
+                      <>
+                        <div className="border-t my-1" />
 
-          {customLists.map((folder) => (
-            <button
-              key={folder.id}
-              onClick={() => handleAddToCustomList(folder)}
-              disabled={saving}
-              className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 text-purple-700`}
-            >
-              {folder.title}
-            </button>
-          ))}
-        </>
-      )}
+                        {customLists.map((folder) => (
+                          <button
+                            key={folder.id}
+                            onClick={() => handleAddToCustomList(folder)}
+                            disabled={saving}
+                            className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-neutral-50 transition-colors disabled:opacity-50 text-neutral-700`}
+                          >
+                            {folder.title}
+                          </button>
+                        ))}
+                      </>
+                    )}
 
-      {/* --- Trường hợp không có custom list --- */}
-      {customLists.length === 0 && (
-        <div className="border-t my-1" />
-      )}
-    </div>
-  </>
-)}
-
+                    {/* --- Trường hợp không có custom list --- */}
+                    {customLists.length === 0 && (
+                      <div className="border-t my-1" />
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             /* Nút Login để Add to List */
