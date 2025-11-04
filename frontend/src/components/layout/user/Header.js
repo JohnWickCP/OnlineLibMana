@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import SearchBar from "./SearchBar";
 
 export default function UserHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -19,17 +20,27 @@ export default function UserHeader() {
   };
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
       await logout();
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      // Quan trọng: luôn reset lại dù success hay fail
       setIsLoggingOut(false);
     }
   };
 
-  console.log("isAuthenticated:", isAuthenticated);
+  // Khi trạng thái auth thay đổi (đăng nhập/đăng xuất), đảm bảo nút không kẹt ở "Logging out..."
+  useEffect(() => {
+    setIsLoggingOut(false);
+  }, [isAuthenticated]);
+
+  // Tùy chọn: reset khi đổi route (header nằm trong layout cố định)
+  useEffect(() => {
+    setIsLoggingOut(false);
+  }, [pathname]);
 
   return (
     <header className="bg-gray-700 shadow-md">
@@ -59,7 +70,6 @@ export default function UserHeader() {
               showMenu={true}
             />
 
-            {/* ✅ SỬA: Lật ngược logic - !isAuthenticated (chưa login) thì hiện Login/Sign In */}
             {!isAuthenticated ? (
               <>
                 <li>
@@ -80,7 +90,6 @@ export default function UserHeader() {
                 </li>
               </>
             ) : (
-              // ✅ isAuthenticated (đã login) thì hiện Logout button
               <li>
                 <button
                   onClick={handleLogout}

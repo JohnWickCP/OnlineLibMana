@@ -10,7 +10,7 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// REQUEST INTERCEPTOR
+// ===== REQUEST INTERCEPTOR =====
 api.interceptors.request.use(
   (config) => {
     const token = typeof window !== 'undefined' 
@@ -27,12 +27,11 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('❌ Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// RESPONSE INTERCEPTOR
+// ===== RESPONSE INTERCEPTOR =====
 api.interceptors.response.use(
   (response) => {
     const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
@@ -53,13 +52,67 @@ api.interceptors.response.use(
   }
 );
 
-// AUTH APIs
+// ===== AUTH APIs =====
 export const authAPI = {
+  // ✅ Đăng ký tài khoản
   register: async (data) => {
-    const response = await api.post('/api/auth/register', data);
-    return response.data;
+    try {
+      const response = await api.post('/api/auth/register', data);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Register response:', response.data);
+      }
+      
+      return {
+        success: true,
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error) {
+      // ✅ Xử lý lỗi HTTP (409, 400, 500, ...)
+      if (error.response) {
+        const statusCode = error.response.status;
+        const errorData = error.response.data;
+
+
+        // 🎯 Xử lý các status code cụ thể
+        let defaultMessage = 'Đăng ký thất bại';
+        
+        if (statusCode === 409) {
+          defaultMessage = 'Email này đã được đăng ký. Vui lòng sử dụng email khác.';
+        } else if (statusCode === 400) {
+          defaultMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
+        } else if (statusCode === 500) {
+          defaultMessage = 'Lỗi server. Vui lòng thử lại sau.';
+        }
+
+        return {
+          success: false,
+          status: statusCode,
+          data: errorData,
+          message: errorData?.message || errorData?.msg || defaultMessage,
+        };
+      }
+      
+      // ✅ Xử lý network error
+      if (error.request) {
+        return {
+          success: false,
+          status: 0,
+          message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
+        };
+      }
+      
+
+      return {
+        success: false,
+        status: 0,
+        message: error.message || 'Đăng ký thất bại. Vui lòng thử lại.',
+      };
+    }
   },
 
+  // ✅ Đăng nhập
   login: async (credentials) => {
     try {
       const response = await api.post('/api/auth/login', {
@@ -73,6 +126,7 @@ export const authAPI = {
       
       if (response.data && response.data.result) {
         return {
+          success: true,
           token: response.data.result.token,
           user: {
             email: credentials.email || credentials.username,
@@ -81,12 +135,23 @@ export const authAPI = {
         };
       }
       
-      return response.data;
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
+      if (error.response) {
+        return {
+          success: false,
+          status: error.response.status,
+          message: error.response.data?.message || 'Đăng nhập thất bại',
+        };
+      }
       throw error;
     }
   },
 
+  // ✅ Đăng xuất
   logout: async () => {
     try {
       const response = await api.post('/api/auth/logout');
@@ -106,18 +171,20 @@ export const authAPI = {
     }
   },
 
+  // ✅ Đăng nhập Google
   googleLogin: async () => {
     const response = await api.get('/api/auth/google');
     return response.data;
   },
 
+  // ✅ Xóa tài khoản
   deleteAccount: async (id) => {
     const response = await api.delete(`/api/auth/${id}`);
     return response.data;
   },
 };
 
-// BOOK APIs
+// ===== BOOK APIs =====
 export const booksAPI = {
   getAllBooksWithPagination: async (page = 0, size = 24) => {
     const response = await api.get('/book/listbooks', {
@@ -160,10 +227,15 @@ export const booksAPI = {
   },
 };
 
-// USER APIs
+// ===== USER APIs =====
 export const userAPI = {
-  getAllUsers: async () => {
-    const response = await api.get('/home/listUser');
+  getAllUsers: async (page = 0, size = 20) => {
+    const response = await api.get('/home/listUser', {
+      params: {
+        page: page,
+        size: size
+      }
+    });
     return response.data;
   },
 
@@ -217,14 +289,13 @@ export const userAPI = {
     return response.data;
   },
 
-  // ✅ SỬA: Đúng endpoint theo API docs
   removeBookFromFolder: async (folderId, bookId) => {
     const response = await api.delete(`/home/fb/${folderId}/${bookId}`);
     return response.data;
   },
 };
 
-// ADMIN APIs
+// ===== ADMIN APIs =====
 export const adminAPI = {
   getDashboard: async () => {
     const response = await api.get('/admin/dashboard');

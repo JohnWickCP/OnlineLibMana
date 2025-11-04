@@ -1,21 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "lucide-react";
 import { AuthContext } from "@/components/provider/AuthProvider";
 
 export default function HeaderAdmin() {
   const router = useRouter();
-  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { isAuthenticated, user, logout, loading } = useContext(AuthContext);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      await logout(); // Xóa token + user info
-      router.push("/admin/login"); // Chuyển hướng về trang login
+      await logout();
+      setTimeout(() => {
+        router.push("/admin/login");
+      }, 300);
     } catch (error) {
       console.error("Logout failed:", error);
       setIsLoggingOut(false);
@@ -27,8 +29,8 @@ export default function HeaderAdmin() {
       <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-8">
         {/* Logo */}
         <Link
-          href="/admin/books"
-          className="flex items-center text-white no-underline"
+          href="/admin/dashboard"
+          className="flex items-center text-white no-underline hover:opacity-80 transition"
         >
           <div className="font-bold tracking-widest text-[30px] leading-tight">
             ELIBRARY
@@ -41,7 +43,7 @@ export default function HeaderAdmin() {
             <li>
               <Link
                 href="/admin/books"
-                className="uppercase hover:text-green-400 text-sm font-medium text-green-400"
+                className="uppercase hover:text-green-400 text-sm font-medium text-green-400 transition"
               >
                 BOOKS
               </Link>
@@ -50,7 +52,7 @@ export default function HeaderAdmin() {
             <li>
               <Link
                 href="/admin/users"
-                className="uppercase hover:text-green-400 text-sm font-medium"
+                className="uppercase hover:text-green-400 text-sm font-medium transition"
               >
                 USERS
               </Link>
