@@ -10,7 +10,6 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// ===== REQUEST INTERCEPTOR =====
 api.interceptors.request.use(
   (config) => {
     const token = typeof window !== 'undefined' 
@@ -21,9 +20,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📤 API Request:', config.method.toUpperCase(), config.url);
-    }
     return config;
   },
   (error) => {
@@ -31,13 +27,8 @@ api.interceptors.request.use(
   }
 );
 
-// ===== RESPONSE INTERCEPTOR =====
 api.interceptors.response.use(
   (response) => {
-    const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-    if (isDev) {
-      console.log('✅ API Response:', response.status, response.config.url);
-    }
     return response;
   },
   (error) => {
@@ -52,16 +43,10 @@ api.interceptors.response.use(
   }
 );
 
-// ===== AUTH APIs =====
 export const authAPI = {
-  // ✅ Đăng ký tài khoản
   register: async (data) => {
     try {
       const response = await api.post('/api/auth/register', data);
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Register response:', response.data);
-      }
       
       return {
         success: true,
@@ -69,13 +54,10 @@ export const authAPI = {
         status: response.status,
       };
     } catch (error) {
-      // ✅ Xử lý lỗi HTTP (409, 400, 500, ...)
       if (error.response) {
         const statusCode = error.response.status;
         const errorData = error.response.data;
 
-
-        // 🎯 Xử lý các status code cụ thể
         let defaultMessage = 'Đăng ký thất bại';
         
         if (statusCode === 409) {
@@ -94,7 +76,6 @@ export const authAPI = {
         };
       }
       
-      // ✅ Xử lý network error
       if (error.request) {
         return {
           success: false,
@@ -102,7 +83,6 @@ export const authAPI = {
           message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
         };
       }
-      
 
       return {
         success: false,
@@ -112,17 +92,12 @@ export const authAPI = {
     }
   },
 
-  // ✅ Đăng nhập
   login: async (credentials) => {
     try {
       const response = await api.post('/api/auth/login', {
         email: credentials.email || credentials.username,
         password: credentials.password,
       });
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔐 Login response:', response.data);
-      }
       
       if (response.data && response.data.result) {
         return {
@@ -151,7 +126,6 @@ export const authAPI = {
     }
   },
 
-  // ✅ Đăng xuất
   logout: async () => {
     try {
       const response = await api.post('/api/auth/logout');
@@ -171,20 +145,17 @@ export const authAPI = {
     }
   },
 
-  // ✅ Đăng nhập Google
   googleLogin: async () => {
     const response = await api.get('/api/auth/google');
     return response.data;
   },
 
-  // ✅ Xóa tài khoản
   deleteAccount: async (id) => {
     const response = await api.delete(`/api/auth/${id}`);
     return response.data;
   },
 };
 
-// ===== BOOK APIs =====
 export const booksAPI = {
   getAllBooksWithPagination: async (page = 0, size = 24) => {
     const response = await api.get('/book/listbooks', {
@@ -227,7 +198,6 @@ export const booksAPI = {
   },
 };
 
-// ===== USER APIs =====
 export const userAPI = {
   getAllUsers: async (page = 0, size = 20) => {
     const response = await api.get('/home/listUser', {
@@ -295,7 +265,6 @@ export const userAPI = {
   },
 };
 
-// ===== ADMIN APIs =====
 export const adminAPI = {
   getDashboard: async () => {
     const response = await api.get('/admin/dashboard');

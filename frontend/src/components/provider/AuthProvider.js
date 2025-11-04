@@ -84,7 +84,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     setRole(null);
-    setIsAuthenticated(false); // ✅ Set false khi logout
+    setIsAuthenticated(false); 
 
     // Clear localStorage
     if (typeof window !== 'undefined') {
@@ -114,7 +114,7 @@ export function AuthProvider({ children }) {
     token,
     role,
     loading,
-    isAuthenticated, // ✅ Giờ đây là boolean, không phải function
+    isAuthenticated, 
     login,
     logout,
     updateUser,

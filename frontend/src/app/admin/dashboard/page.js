@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useContext } from "react";
 import { Book, User, Eye } from "lucide-react";
 import {
   BarChart,
@@ -15,6 +15,8 @@ import {
   Legend,
 } from "recharts";
 import { adminAPI } from "@/lib/api";
+import { AuthContext } from "@/components/provider/AuthProvider";
+import { useRouter } from "next/navigation";
 
 // ====== Helpers ======
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#94a3b8"];
@@ -35,18 +37,40 @@ function StatCard({ icon, title, number, unit, description }) {
         {number} {unit}
       </p>
       <p className="text-sm text-gray-500 mb-3">{description}</p>
-      
     </div>
   );
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
+
   const [data, setData] = useState(null); // server result
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // local loading for API fetch
   const [error, setError] = useState("");
 
+  // Only fetch dashboard data when auth is resolved and user is authenticated
   useEffect(() => {
     let mounted = true;
+
+    // If auth is still resolving, wait
+    if (authLoading) {
+      setLoading(true);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    // If not authenticated, don't call API — show prompt instead
+    if (!isAuthenticated) {
+      setData(null);
+      setLoading(false);
+      setError("");
+      return () => {
+        mounted = false;
+      };
+    }
+
     (async () => {
       try {
         setLoading(true);
@@ -64,10 +88,11 @@ export default function AdminDashboardPage() {
         if (mounted) setLoading(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isAuthenticated, authLoading]);
 
   const usersBarData = useMemo(() => {
     if (!data) return [];
@@ -94,6 +119,43 @@ export default function AdminDashboardPage() {
     }));
   }, [data]);
 
+  // If auth is still resolving, show spinner
+  if (authLoading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-[#e8e4dc] to-[#d4cfc7]">
+        <div className="text-center">
+          <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-3" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <p className="text-gray-600">Đang kiểm tra trạng thái đăng nhập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show message and button to go to admin login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-[#e8e4dc] to-[#d4cfc7] p-6">
+        <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-lg">
+          <p className="text-yellow-600 mb-4">🔒 Bạn chưa đăng nhập vào khu vực Admin.</p>
+          <p className="text-gray-600 mb-6">Vui lòng đăng nhập bằng tài khoản quản trị để truy cập dashboard.</p>
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => router.push("/admin/login")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
+            >
+              Đi đến trang đăng nhập Admin
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // While fetching dashboard data
   if (loading) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-[#e8e4dc] to-[#d4cfc7]">

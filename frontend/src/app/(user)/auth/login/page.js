@@ -1,10 +1,24 @@
-// src/app/login/page.js
 "use client";
 
+import { useEffect, useContext } from "react";
+import { useRouter } from "next/navigation";
 import UserLoginForm from "@/components/auth/UserLoginForm";
-
+import { AuthContext } from "@/components/provider/AuthProvider";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
+
+  useEffect(() => {
+    // Nếu auth vẫn đang kiểm tra thì chờ
+    if (authLoading) return;
+
+    // Nếu đã đăng nhập thì chuyển hướng đến /books (replace để không quay lại trang login)
+    if (isAuthenticated) {
+      router.replace("/books");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   return (
     <div className="min-h-[80vh] bg-[#E9E7E0] flex items-center justify-center p-20">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl w-full flex flex-col md:flex-row">

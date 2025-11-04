@@ -151,6 +151,7 @@ export default function BookInfoSection({ bookData }) {
           </h3>
           <div className="flex flex-wrap gap-2">
             {bookData.subjects.slice(0, 12).map((subject, idx) => (
+              console.log(subject),
               <Link
                 key={idx}
                 href={`#`}
