@@ -155,7 +155,7 @@ function AdminBooksContent() {
               </span>
               <button
                 onClick={handleClearSearch}
-                className="ml-2 text-blue-600 hover:underline"
+                className="ml-2 text-[##608075] hover:underline"
               >
                 Clear search
               </button>

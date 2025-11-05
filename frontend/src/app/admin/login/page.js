@@ -1,9 +1,25 @@
-// src/app/login/page.js
+"use client";
 
+import { useContext, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import LoginForm from "@/components/auth/AdminLoginForm";
-
+import { AuthContext } from "@/components/provider/AuthProvider";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
+
+  useEffect(() => {
+    // Nếu auth vẫn đang kiểm tra thì chờ (không redirect)
+    if (authLoading) return;
+
+    // Nếu đã đăng nhập, chuyển đến dashboard admin
+    if (isAuthenticated) {
+      // replace để tránh người dùng back về trang login
+      router.replace("/admin/dashboard");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   return (
     <div className="min-h-[84vh] bg-[#E9E7E0] flex items-center justify-center p-20">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-6xl w-full flex flex-col md:flex-row min-h-[50vh]">

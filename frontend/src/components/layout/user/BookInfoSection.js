@@ -151,9 +151,10 @@ export default function BookInfoSection({ bookData }) {
           </h3>
           <div className="flex flex-wrap gap-2">
             {bookData.subjects.slice(0, 12).map((subject, idx) => (
+              console.log(subject),
               <Link
                 key={idx}
-                href={`/books?subject=${encodeURIComponent(subject)}`}
+                href={`#`}
                 className="px-3 py-1.5 bg-neutral-100 text-neutral-700 rounded-full text-sm hover:bg-neutral-200 transition-colors"
               >
                 {subject}

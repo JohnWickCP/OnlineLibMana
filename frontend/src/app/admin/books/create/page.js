@@ -10,7 +10,7 @@ export default function AddBookPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const [form, setForm] = useState({
     title: "",
     author: "",
@@ -43,7 +43,7 @@ export default function AddBookPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     if (!form.title.trim()) {
       setError("Vui lòng nhập tên sách");
@@ -64,32 +64,41 @@ export default function AddBookPage() {
         author: form.author.trim(),
         description: form.description.trim() || "Chưa có mô tả",
         category: form.category || "Chưa phân loại",
-        coverImage: form.coverImage.trim() || "https://via.placeholder.com/400x600?text=No+Cover",
+        coverImage:
+          form.coverImage.trim() ||
+          "https://via.placeholder.com/400x600?text=No+Cover",
         fileUrl: form.fileUrl.trim(),
         language: form.language.trim() || "Vietnamese",
-        subject: form.subject.trim() || "Chưa xác định",
+        subject: (() => {
+          const raw = form.subject || "";
+          // split on comma or '--' or semicolon, slash, then join by '--'
+          const parts = raw
+            .split(/(?:\s*,\s*|\-\-|\s*;\s*|\/)/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          return parts.join("--");
+        })(),
         createdAt: new Date().toISOString(),
       };
 
       console.log("📤 Đang gửi data:", bookData);
 
       const response = await booksAPI.addBook(bookData);
-      
+
       console.log("✅ Response:", response);
 
       setSuccess(true);
 
       // Chuyển về trang danh sách sau 1.5 giây
       setTimeout(() => {
-        router.push('/admin/books');
+        router.push("/admin/books");
       }, 1500);
-
     } catch (err) {
       console.error("❌ Lỗi khi thêm sách:", err);
       setError(
-        err.response?.data?.message || 
-        err.message || 
-        "Không thể thêm sách. Vui lòng thử lại."
+        err.response?.data?.message ||
+          err.message ||
+          "Không thể thêm sách. Vui lòng thử lại."
       );
     } finally {
       setLoading(false);
@@ -237,12 +246,13 @@ export default function AddBookPage() {
             {form.coverImage && (
               <div className="mt-3">
                 <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                <img 
-                  src={form.coverImage} 
-                  alt="Preview" 
+                <img
+                  src={form.coverImage}
+                  alt="Preview"
                   className="w-32 h-48 object-cover rounded-lg border border-gray-300"
                   onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/400x600?text=Invalid+Image";
+                    e.target.src =
+                      "https://via.placeholder.com/400x600?text=Invalid+Image";
                   }}
                 />
               </div>
@@ -279,7 +289,9 @@ export default function AddBookPage() {
           {success && (
             <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3 animate-slideIn">
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">Thêm sách thành công! Đang chuyển hướng...</span>
+              <span className="text-sm font-medium">
+                Thêm sách thành công! Đang chuyển hướng...
+              </span>
             </div>
           )}
 
@@ -311,7 +323,7 @@ export default function AddBookPage() {
 
             <button
               type="button"
-              onClick={() => router.push('/admin/books')}
+              onClick={() => router.push("/admin/books")}
               disabled={loading}
               className="px-6 py-3 border-2 border-gray-300 hover:border-gray-400 disabled:border-gray-200 disabled:text-gray-400 text-gray-700 font-medium rounded-lg transition"
             >

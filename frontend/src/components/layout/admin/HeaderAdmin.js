@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "lucide-react";
 import { AuthContext } from "@/components/provider/AuthProvider";
@@ -24,12 +24,29 @@ export default function HeaderAdmin() {
     }
   };
 
+  // Khi nhấn logo/link Library: giữ href tĩnh để tránh hydration mismatch,
+  // nhưng xử lý redirect ở client bằng onClick
+  const handleLibraryClick = (e) => {
+    // nếu người dùng bấm link, chặn hành vi mặc định và redirect theo auth
+    e.preventDefault();
+
+    // nếu auth vẫn đang load, không redirect ngay (có thể show spinner)
+    if (loading) return;
+
+    if (isAuthenticated) {
+      router.push("/admin/dashboard");
+    } else {
+      router.push("/admin/login");
+    }
+  };
+
   return (
     <header className="bg-gray-700 shadow-md">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-5 py-8">
-        {/* Logo */}
+        {/* Logo: href tĩnh = "/admin" (server & client giống nhau) */}
         <Link
-          href="/admin/dashboard"
+          href="/admin"
+          onClick={handleLibraryClick}
           className="flex items-center text-white no-underline hover:opacity-80 transition"
         >
           <div className="font-bold tracking-widest text-[30px] leading-tight">
@@ -58,7 +75,7 @@ export default function HeaderAdmin() {
               </Link>
             </li>
 
-            {/* ✅ Nếu chưa đăng nhập thì hiện Login */}
+            {/* Nếu chưa đăng nhập thì hiện Login */}
             {!isAuthenticated ? (
               <li>
                 <Link
@@ -69,7 +86,7 @@ export default function HeaderAdmin() {
                 </Link>
               </li>
             ) : (
-              // ✅ Nếu đã đăng nhập thì hiện Logout
+              // Nếu đã đăng nhập thì hiện Logout
               <li>
                 <button
                   onClick={handleLogout}

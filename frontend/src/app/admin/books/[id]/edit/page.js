@@ -44,25 +44,23 @@ export default function EditBookPage() {
     "Truyện tranh",
   ];
 
-
-
   // 🔹 Load dữ liệu sách
   useEffect(() => {
     if (!mounted) return;
-    
+
     const fetchBook = async () => {
       try {
         console.log("🔍 Đang tải thông tin sách ID:", id);
         const response = await booksAPI.getBookById(id);
-        
+
         // ✅ Kiểm tra cấu trúc response
         console.log("📦 Response từ API:", response);
-        
+
         // Xử lý cả 2 trường hợp: response.result hoặc response trực tiếp
         const data = response.result || response;
-        
+
         console.log("📚 Dữ liệu sách:", data);
-        
+
         if (!data) {
           throw new Error("Không tìm thấy thông tin sách");
         }
@@ -76,7 +74,13 @@ export default function EditBookPage() {
           coverImage: data.coverImage || "",
           fileUrl: data.fileUrl || "",
           language: data.language || "Vietnamese",
-          subject: data.subject || "",
+          subject: data.subject
+            ? String(data.subject)
+                .split("--")
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .join(", ")
+            : "",
         });
 
         console.log("✅ Đã load dữ liệu vào form");
@@ -114,15 +118,24 @@ export default function EditBookPage() {
       setError(null);
 
       const bookData = {
-        title: form.title.trim(),
-        author: form.author.trim(),
-        description: form.description.trim() || "Chưa có mô tả",
-        category: form.category || "Chưa phân loại",
-        coverImage: form.coverImage.trim() || "https://via.placeholder.com/400x600?text=No+Cover",
-        fileUrl: form.fileUrl.trim(),
-        language: form.language,
-        subject: form.subject || "Chưa xác định",
-      };
+  title: form.title.trim(),
+  author: form.author.trim(),
+  description: form.description.trim() || "Chưa có mô tả",
+  category: form.category || "Chưa phân loại",
+  coverImage: form.coverImage.trim() || "https://via.placeholder.com/400x600?text=No+Cover",
+  fileUrl: form.fileUrl.trim(),
+  language: form.language,
+  // normalize subject: accept comma or '--' from user and convert to DB format with '--'
+  subject: (() => {
+    const raw = form.subject || "";
+    // split on comma or '--' or semicolon, slash, then join by '--'
+    const parts = raw
+      .split(/(?:\s*,\s*|\-\-|\s*;\s*|\/)/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return parts.join("--");
+  })(),
+};
 
       console.log("📤 Gửi dữ liệu update:", bookData);
       await booksAPI.editBook(id, bookData);
@@ -133,7 +146,10 @@ export default function EditBookPage() {
       }, 1500);
     } catch (err) {
       console.error("❌ Lỗi khi cập nhật sách:", err);
-      setError(err.response?.data?.message || "Không thể cập nhật sách. Vui lòng thử lại.");
+      setError(
+        err.response?.data?.message ||
+          "Không thể cập nhật sách. Vui lòng thử lại."
+      );
     } finally {
       setLoading(false);
     }
@@ -159,7 +175,7 @@ export default function EditBookPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Lỗi</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => router.push('/books')}
+            onClick={() => router.push("/books")}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
             Quay về danh sách sách
@@ -291,12 +307,13 @@ export default function EditBookPage() {
             />
             {form.coverImage && (
               <div className="mt-3">
-                <img 
-                  src={form.coverImage} 
-                  alt="Preview" 
+                <img
+                  src={form.coverImage}
+                  alt="Preview"
                   className="w-32 h-48 object-cover rounded-lg border border-gray-300"
                   onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/400x600?text=Invalid+Image";
+                    e.target.src =
+                      "https://via.placeholder.com/400x600?text=Invalid+Image";
                   }}
                 />
               </div>
@@ -330,7 +347,9 @@ export default function EditBookPage() {
           {success && (
             <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3 animate-slideIn">
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">Cập nhật sách thành công!</span>
+              <span className="text-sm font-medium">
+                Cập nhật sách thành công!
+              </span>
             </div>
           )}
 
