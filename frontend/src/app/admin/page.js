@@ -1,8 +1,7 @@
-// src/app/page.js
+// src/app/admin/page.js
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return (
-    <div>
-    </div>
-  );
+export default function AdminPage() {
+  // Server-side redirect to the admin dashboard
+  redirect("/admin/dashboard");
 }

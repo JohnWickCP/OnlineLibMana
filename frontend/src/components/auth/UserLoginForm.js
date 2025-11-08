@@ -45,15 +45,25 @@ export default function UserLoginForm() {
 
       router.push("/books");
     } catch (err) {
-      // ✅ Xử lý lỗi chi tiết hơn
-      if (err.response?.status === 401) {
-        setError("Email hoặc mật khẩu không chính xác");
-      } else if (err.response?.status === 404) {
+      // Normalize different error shapes and show a friendly message
+      // Possible shapes:
+      // - axios-like: err.response?.status, err.response?.data?.message
+      // - fetch-like / custom: err.message
+      // - network/timeout: err.code === 'ECONNABORTED' or other codes
+  const status = err?.response?.status;
+      const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
+
+      if (status === 401) {
+        setError("Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng thử lại.");
+      } else if (status === 404) {
         setError("Tài khoản không tồn tại");
-      } else if (err.code === 'ECONNABORTED') {
+      } else if (err?.code === "ECONNABORTED") {
         setError("Kết nối timeout, vui lòng thử lại");
+      } else if (apiMessage) {
+        // Prefer server-provided message when available
+        setError(String(apiMessage));
       } else {
-        setError(err.message || "Đăng nhập thất bại. Vui lòng thử lại");
+        setError("Đăng nhập thất bại. Vui lòng thử lại");
       }
     } finally {
       setLoading(false);

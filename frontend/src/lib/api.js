@@ -115,13 +115,24 @@ export const authAPI = {
         data: response.data,
       };
     } catch (error) {
+      // Convert axios error into a thrown Error with useful metadata so callers
+      // can handle it uniformly (AuthProvider expects thrown errors).
       if (error.response) {
-        return {
-          success: false,
-          status: error.response.status,
-          message: error.response.data?.message || 'Đăng nhập thất bại',
-        };
+        const message = error.response.data?.message || error.response.data?.msg || 'Đăng nhập thất bại';
+        const err = new Error(String(message));
+        err.status = error.response.status;
+        err.response = error.response;
+        err.code = error.code;
+        throw err;
       }
+
+      if (error.request) {
+        const err = new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+        err.status = 0;
+        err.request = error.request;
+        throw err;
+      }
+
       throw error;
     }
   },
