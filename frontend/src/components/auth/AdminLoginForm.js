@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/InputLogin";
 import Link from "next/link";
 
-export default function UserLoginForm() {
+export default function AdminLoginForm() {
   const router = useRouter();
   const { login: authLogin } = useAuth();
 
@@ -40,17 +40,26 @@ export default function UserLoginForm() {
       setLoading(true);
       setError("");
 
-      console.log(" handleSubmit called");
-
-      // ✅ Gọi authLogin từ AuthProvider
       await authLogin(formData.email, formData.password);
-
-      console.log("✅ authLogin completed");
-
       router.push("/admin/books");
     } catch (err) {
-      console.error("❌ Error:", err);
-      setError(err.message || "Đăng nhập thất bại");
+  // Normalize different error shapes and show a friendly message
+  const status = err?.response?.status;
+      const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
+
+      if (status === 401) {
+        setError("Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng thử lại.");
+      } else if (status === 404) {
+        setError("Tài khoản không tồn tại");
+      } else if (err?.code === "ECONNABORTED") {
+        setError("Kết nối timeout, vui lòng thử lại");
+      } else if (apiMessage) {
+        setError(String(apiMessage));
+      } else if (err?.message) {
+        setError(String(err.message));
+      } else {
+        setError("Đăng nhập thất bại. Vui lòng thử lại");
+      }
     } finally {
       setLoading(false);
     }

@@ -47,10 +47,24 @@ export function AuthProvider({ children }) {
     try {
       const response = await authAPI.login({ email, password });
 
-      const authToken = response.token;
-      if (!authToken) throw new Error('Token không hợp lệ');
+      // authAPI.login may return a { success: false, status, message } object
+      // instead of throwing. Handle that shape here so we keep correct status.
+      if (response && response.success === false) {
+        const err = new Error(response.message || 'Đăng nhập thất bại');
+        err.status = response.status;
+        err.response = { data: { message: response.message } };
+        throw err;
+      }
 
-      const userData = response.user;
+      // Support different possible shapes returned by authAPI.login
+      const authToken = response?.token || response?.data?.result?.token || response?.data?.token || response?.result?.token;
+      if (!authToken) {
+        const err = new Error('Token không hợp lệ');
+        err.response = response;
+        throw err;
+      }
+
+      const userData = response.user || (response.data && response.data.result && response.data.result.user) || response.data?.user || response.result?.user || { email };
 
       setToken(authToken);
       setUser(userData);
@@ -64,17 +78,30 @@ export function AuthProvider({ children }) {
       return { token: authToken, user: userData };
     } catch (error) {
       setIsAuthenticated(false);
-      
-      // ✅ Throw error với thông tin chi tiết hơn
-      if (error.response?.status === 401) {
-        throw new Error('Email hoặc mật khẩu không chính xác');
-      } else if (error.response?.status === 404) {
-        throw new Error('Tài khoản không tồn tại');
-      } else if (error.code === 'ECONNABORTED') {
-        throw new Error('Kết nối timeout');
-      } else {
-        throw new Error(error.response?.data?.message || 'Đăng nhập thất bại');
+
+      // Normalize a friendly message but preserve original response/code for callers
+      const status = error?.response?.status;
+      const apiMessage = error?.response?.data?.message || error?.response?.data?.error;
+
+      let message = 'Đăng nhập thất bại';
+      if (status === 401) {
+        message = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
+      } else if (status === 404) {
+        message = 'Tài khoản không tồn tại. Vui lòng kiểm tra lại.';
+      } else if (error?.code === 'ECONNABORTED') {
+        message = 'Kết nối timeout. Vui lòng thử lại.';
+      } else if (apiMessage) {
+        message = String(apiMessage);
       }
+
+      const err = new Error(message);
+      err.status = status;
+      err.code = error?.code;
+      err.response = error?.response;
+      // preserve original error for deeper debugging if needed
+      err.original = error;
+      err.originalMessage = error?.message;
+      throw err;
     }
   };
 

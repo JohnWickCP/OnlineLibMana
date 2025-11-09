@@ -45,14 +45,21 @@ export default function MyBooksListsPage() {
 
   // Load danh sách khi component mount
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchAllLists();
-    } else {
-      // Nếu chưa login, chỉ hiển thị default lists với count = 0
-      setLists(DEFAULT_LISTS.map((list) => ({ ...list, count: 0 })));
-      setLoading(false);
+    // Wait until auth state is resolved. Some auth hooks initialize with
+    // undefined/null while checking session; don't redirect during that time.
+    if (typeof isAuthenticated === "undefined" || isAuthenticated === null) {
+      return;
     }
-  }, [isAuthenticated]);
+
+    // If not authenticated, redirect user to login page.
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+
+    // Authenticated -> load lists
+    fetchAllLists();
+  }, [isAuthenticated, router]);
 
   /**
    * Fetch tất cả các list (default + custom)
@@ -267,7 +274,7 @@ export default function MyBooksListsPage() {
                   disabled={!isAuthenticated}
                   className={`px-8 py-2 rounded-md text-sm transition ${
                     isAuthenticated
-                      ? "bg-[#62BFA3] hover:bg-[#52AF93] text-white"
+                      ? "bg-[#608075] hover:bg-[#608075] text-white"
                       : "bg-neutral-300 text-neutral-500 cursor-not-allowed"
                   }`}
                 >
@@ -276,23 +283,18 @@ export default function MyBooksListsPage() {
               </div>
             ))}
 
-            {/* Create New List Button */}
-            <div className="flex flex-col items-center justify-center px-6">
-              <button
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    alert("⚠️ Please login to create custom lists");
-                    router.push("/auth/login");
-                    return;
-                  }
-                  setShowModal(true);
-                }}
-                className="flex items-center gap-2 bg-[#62BFA3] hover:bg-[#52AF93] text-white px-6 py-3 rounded-xl text-sm transition"
-              >
-                <Plus className="w-4 h-4" />
-                Create new List
-              </button>
-            </div>
+            {/* Create New List Button (only show when authenticated) */}
+            {isAuthenticated && (
+              <div className="flex flex-col items-center justify-center px-6">
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="flex items-center gap-2 bg-[#608075] hover:bg-[#608075] text-white px-6 py-3 rounded-xl text-sm transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create new List
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -361,7 +363,7 @@ export default function MyBooksListsPage() {
               <button
                 onClick={handleAddList}
                 disabled={creating || !newListName.trim()}
-                className="w-full mt-6 bg-[#62BFA3] hover:bg-[#52AF93] text-white px-3 py-2.5 rounded transition disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full mt-6 bg-[#608075] hover:bg-[#608075] text-white px-3 py-2.5 rounded transition disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {creating ? (
                   <>

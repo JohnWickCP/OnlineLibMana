@@ -12,15 +12,19 @@ export default function HeaderAdmin() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    // ensure we always reset the local logging-out state so the button
+    // text doesn't get stuck when this component stays mounted across routes
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
       await logout();
-      setTimeout(() => {
-        router.push("/admin/login");
-      }, 300);
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      // reset the flag (component may be persistent across route changes)
       setIsLoggingOut(false);
+      // navigate to login page after logout completes
+      // no need for extra timeout; router.push is fine here
+      router.push("/admin/login");
     }
   };
 
@@ -36,7 +40,7 @@ export default function HeaderAdmin() {
     if (isAuthenticated) {
       router.push("/admin/dashboard");
     } else {
-      router.push("/admin/login");
+      router.push("/admin/books");
     }
   };
 
