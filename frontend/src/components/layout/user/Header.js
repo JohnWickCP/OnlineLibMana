@@ -23,7 +23,7 @@ export default function UserHeader() {
     setIsLoggingOut(true);
     try {
       await logout();
-      router.push("/");
+      router.push("/auth/login");
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
