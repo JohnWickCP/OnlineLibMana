@@ -106,7 +106,10 @@ public class UserService {
     }
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
-    public String addFBFolder(TilteFolder tilteFolder) {
+    public String addFBFolder(TilteFolder tilteFolder) throws Exception {
+        if(favouriteRepository.existsByTitle(tilteFolder.getTitle())) {
+            throw new AppException(ErrorCode.FOLDER_EXISTED);
+        }
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).get();
         FavouriteBooks favouriteBooks = new FavouriteBooks();
@@ -304,6 +307,7 @@ public class UserService {
         return "Delete Successful:" + id;
     }
 
+    @PreAuthorize("isAuthenticated()")
     public Page<BookResponse> getBooksDependOnStatus(String status, Integer page, Integer size) {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
