@@ -10,5 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 public class AuthenticationResponse {
     private String token;
+    private String role;
     private Boolean success;
 }

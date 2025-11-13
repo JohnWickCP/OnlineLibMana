@@ -62,10 +62,18 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.ACCOUNT_NOT_ACTIVE);
         }
 
+        String role;
+        if(user.getRole().getName().equals("ADMIN")){
+            role = "ADMIN";
+        }else {
+            role = "USER";
+        }
+
         var token = generateToken(user);
         return AuthenticationResponse.builder()
                 .token(token)
                 .success(true)
+                .role(role)
                 .build();
     }
 
