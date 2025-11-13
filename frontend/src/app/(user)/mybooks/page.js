@@ -145,6 +145,21 @@ export default function MyBooksListsPage() {
       return;
     }
 
+    // Client-side check: nếu custom list cùng tên đã tồn tại thì báo lỗi ngay
+    // So sánh case-insensitive và bỏ khoảng trắng 2 đầu
+    const normalizedNewName = newListName.trim().toLowerCase();
+    const duplicate = lists.some(
+      (l) =>
+        !l.isDefault &&
+        l.name &&
+        l.name.trim().toLowerCase() === normalizedNewName
+    );
+
+    if (duplicate) {
+      alert(`❌ A custom list named "${newListName.trim()}" already exists.`);
+      return;
+    }
+
     try {
       setCreating(true);
 
