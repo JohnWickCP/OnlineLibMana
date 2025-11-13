@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BookService {
     @Autowired
     private BookRepository bookRepository;
-    @Autowired
-    private CountRepository countRepository;
+//    @Autowired
+//    private CountRepository countRepository;
 
     public BookResponse getBook(Long bookId) {
         Book book = bookRepository.getBookById(bookId)
@@ -69,6 +69,10 @@ public class BookService {
     @PreAuthorize("hasAuthority('ROLE_SCOPE_ADMIN')")
     @Transactional
     public BookResponse addBook(BookRequest bookRequest) {
+        if(bookRepository.existsByTitle(bookRequest.getTitle()) &&
+        bookRepository.existsByAuthor(bookRequest.getAuthor())){
+            throw  new AppException(ErrorCode.BOOK_EXISTED);
+        }
         Book book = Book.builder()
                 .title(bookRequest.getTitle())
                 .author(bookRequest.getAuthor())
