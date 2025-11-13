@@ -51,7 +51,7 @@ public class UserCotroller {
     }
 //    Add favourite book folder
     @PostMapping("/addFBfolder")
-    public ApiResponse<String> addFBFolder(@RequestBody TilteFolder tilteFolder) {
+    public ApiResponse<String> addFBFolder(@RequestBody TilteFolder tilteFolder) throws Exception {
         return ApiResponse.<String>builder()
                 .result(userService.addFBFolder(tilteFolder))
                 .build();
@@ -114,6 +114,14 @@ public class UserCotroller {
     public ApiResponse<String> addBookByStatus(@PathVariable Long bookId, @PathVariable("status") String status){
         return ApiResponse.<String>builder()
                 .result(userService.addBookByStatus(bookId,status))
+                .build();
+    }
+
+//    Delete book for statusBook
+    @DeleteMapping("/deleteBookByStatus/{bookId}")
+    public ApiResponse<String> deleteBookByStatus(@PathVariable Long bookId){
+        return ApiResponse.<String>builder()
+                .result(userService.deleteStatusBook(bookId))
                 .build();
     }
 
