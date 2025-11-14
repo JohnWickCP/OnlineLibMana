@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FavouriteRepository extends JpaRepository<FavouriteBooks,Long> {
     Page<Book> findById(Long id, Pageable pageable);
+
+    boolean existsByTitle(String title);
 }

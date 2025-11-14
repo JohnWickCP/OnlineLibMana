@@ -106,7 +106,10 @@ public class UserService {
     }
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
-    public String addFBFolder(TilteFolder tilteFolder) {
+    public String addFBFolder(TilteFolder tilteFolder) throws Exception {
+        if(favouriteRepository.existsByTitle(tilteFolder.getTitle())) {
+            throw new AppException(ErrorCode.FOLDER_EXISTED);
+        }
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).get();
         FavouriteBooks favouriteBooks = new FavouriteBooks();
@@ -153,6 +156,32 @@ public class UserService {
 
         return folders;
     }
+
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
+    @Transactional
+    public String deleteStatusBook(Long bookId) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Bookshelf bookshelf = user.getBookshelf();
+
+        BookshelfItem bookshelfItem = bookshelf.getItems().stream()
+                .filter(item -> item.getBook().getId().equals(bookId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Book not found in bookshelf"));
+
+        bookshelf.getItems().remove(bookshelfItem);
+
+        bookshelfItem.setBookshelf(null);
+
+        bookshelfRepository.save(bookshelf);
+
+        return "Deleted book from bookshelf successfully. " + bookId;
+    }
+
+
 
     @PreAuthorize("isAuthenticated()")
     public Long countBookByStautus(String status){
@@ -304,6 +333,7 @@ public class UserService {
         return "Delete Successful:" + id;
     }
 
+    @PreAuthorize("isAuthenticated()")
     public Page<BookResponse> getBooksDependOnStatus(String status, Integer page, Integer size) {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)

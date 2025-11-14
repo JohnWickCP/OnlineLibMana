@@ -20,6 +20,7 @@ public enum ErrorCode {
     LIST_NOT_FOUND(1011, "List not found", HttpStatus.NOT_FOUND),
     ACCOUNT_NOT_ACTIVE(1012, "Account not active", HttpStatus.BAD_REQUEST),
     BOOK_EXISTED(1013, "Book already existed", HttpStatus.CONFLICT),
+    FOLDER_EXISTED(1014, "Folder already existed", HttpStatus.BAD_REQUEST)
 //    INVALID_DOB(1008, "Your age must be at least {min}", HttpStatus.BAD_REQUEST),
     ;
 
