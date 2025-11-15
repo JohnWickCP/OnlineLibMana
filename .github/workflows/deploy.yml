@@ -1,73 +1,117 @@
 # .github/workflows/deploy.yml
-name: Deploy Backend to EC2
+name: Deploy Full-Stack
 
 on:
-  pull_request:
-    branches: [ develop, main ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy.yml'
   push:
-    branches: [ develop, main ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy.yml'
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
-  deploy:
+  # ==================== DEPLOY BACKEND ====================
+  deploy-backend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
           distribution: temurin
+          java-version: '21'
           cache: maven
 
       - name: Build JAR
-        run: |
-          cd backend
-          mvn -B clean package -DskipTests
+        working-directory: ./backend
+        run: mvn -B clean package -DskipTests
 
-      - name: Tạo .env
+      - name: Create .env for Backend
         run: |
           cat > .env << EOF
           DB_URL=${{ secrets.RDS_URL }}
           DB_USER=${{ secrets.RDS_USER }}
           DB_PASS=${{ secrets.RDS_PASS }}
-          DB_EMAIL=${{ secrets.EMAIL_USER }}
-          DB_EMAIL_PASS=${{ secrets.EMAIL_PASS }}
-          JWT_SECRET=${{ secrets.JWT_SECRET_KEY }}
+          EMAIL_USER=${{ secrets.EMAIL_USER }}
+          EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+          JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
           SERVER_PORT=${{ secrets.SERVER_PORT }}
           EOF
 
-      - name: Deploy
+      - name: Deploy Backend to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          echo "$EC2_SSH_KEY" > key
-          chmod 600 key
+          echo "$EC2_SSH_KEY" > key && chmod 600 key
+          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
 
+          # Chỉ copy 2 file cần thiết
           scp -i key -o StrictHostKeyChecking=no \
             backend/target/*.jar \
-            backend/src/main/resources/application*.properties \
+            backend/src/main/resources/application.properties \
             .env \
             $EC2_USER@$EC2_HOST:~/deploy/
 
           ssh -i key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+            cd ~/deploy
+
+            # Tạo file .properties từ .env
+            cp .env application-local.properties
+
+            # Restart service
             sudo systemctl restart onlinelib.service
             sleep 15
+
             if sudo systemctl is-active --quiet onlinelib.service; then
-              echo "SERVICE RUNNING! Deploy thành công!"
+              echo "BACKEND: SERVICE RUNNING!"
             else
-              echo "Lỗi service"
-              sudo systemctl status onlinelib.service --no-pager
+              echo "BACKEND: SERVICE FAILED!"
+              journalctl -u onlinelib.service -n 50 --no-pager
               exit 1
             fi
+          EOF
+
+  # ==================== DEPLOY FRONTEND ====================
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Next.js to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$EC2_SSH_KEY" > key && chmod 600 key
+          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
+          mkdir -p ~/.ssh
+          echo -e "Host $EC2_HOST\n  StrictHostKeyChecking no\n  UserKnownHostsFile=/dev/null" > ~/.ssh/config
+
+          rsync -avz --delete \
+            -e "ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            frontend/ $EC2_USER@$EC2_HOST:/home/ubuntu/next-app/
+
+          ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST << 'EOF'
+            cd /home/ubuntu/next-app
+
+            # Tạo .env.production
+            echo "NEXT_PUBLIC_API_URL=https://onlinelibmana.online/api" > .env.production
+
+            yarn install --production --frozen-lockfile
+            yarn build
+
+            if pm2 describe next-app > /dev/null 2>&1; then
+              pm2 restart next-app
+            else
+              pm2 start ecosystem.config.js --name next-app
+            fi
+
+            echo "FRONTEND: DEPLOYED!"
+            pm2 status
           EOF
