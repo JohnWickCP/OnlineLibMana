@@ -1,0 +1,59 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches: [ develop, main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build JAR
+        run: |
+          cd backend
+          mvn -B clean package -DskipTests
+          ls -la target/
+
+      - name: Create .env from secrets
+        run: |
+          cat > .env << EOF
+          DB_URL=${{ secrets.RDS_URL }}
+          DB_USER=${{ secrets.RDS_USER }}
+          DB_PASS=${{ secrets.RDS_PASS }}
+          DB_EMAIL=${{ secrets.EMAIL_USER }}
+          DB_EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+          JWT_SECRET=${{ secrets.JWT_SECRET_KEY }}
+          SERVER_PORT=${{ secrets.SERVER_PORT }}
+          EOF
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$EC2_SSH_KEY" > key
+          chmod 600 key
+
+          scp -i key -o StrictHostKeyChecking=no \
+            backend/target/*.jar \
+            backend/src/main/resources/application*.properties \
+            .env \
+            $EC2_USER@$EC2_HOST:~/deploy/
+
+          ssh -i key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+            sudo systemctl restart onlinelib.service
+            echo "Deploy thành công!"
+            curl -f http://localhost:8080/actuator/health || exit 1
+          EOF
