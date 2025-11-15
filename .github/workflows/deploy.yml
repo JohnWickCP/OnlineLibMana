@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -70,4 +70,38 @@ jobs:
               sudo systemctl status onlinelib.service --no-pager
               exit 1
             fi
+          EOF
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Next.js to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$EC2_SSH_KEY" > key && chmod 600 key
+
+          # Copy code
+          rsync -avz --delete frontend/ $EC2_USER@$EC2_HOST:/home/ubuntu/next-app/
+
+          # Deploy trên EC2
+          ssh -i key $EC2_USER@$EC2_HOST << 'EOF'
+            cd /home/ubuntu/next-app
+
+            # Tạo .env.production
+            echo "NEXT_PUBLIC_API_URL=https://onlinelibmana.online/api" > .env.production
+
+            # Cài + build + restart
+            yarn install --production
+            yarn build
+            pm2 restart next-app || pm2 start ecosystem.config.js --name next-app
+
+            # Log
+            echo "Next.js deployed!"
+            pm2 status
           EOF
