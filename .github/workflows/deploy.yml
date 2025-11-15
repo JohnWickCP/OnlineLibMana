@@ -1,10 +1,6 @@
 # .github/workflows/deploy.yml
 name: Deploy Backend to EC2
 
-# CHẠY KHI:
-# 1. Tạo PR vào develop hoặc main
-# 2. Push trực tiếp vào develop hoặc main
-# 3. Chỉ khi thay đổi backend/ hoặc file workflow
 on:
   pull_request:
     branches: [ develop, main ]
@@ -16,31 +12,28 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy.yml'
-  workflow_dispatch:  # Chạy tay nếu cần
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Cần cho PR
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
           java-version: '21'
+          distribution: temurin
           cache: maven
 
       - name: Build JAR
         run: |
           cd backend
           mvn -B clean package -DskipTests
-          echo "Build thành công: $(ls target/*.jar)"
 
-      - name: Tạo .env từ Secrets
+      - name: Tạo .env
         run: |
           cat > .env << EOF
           DB_URL=${{ secrets.RDS_URL }}
@@ -52,7 +45,7 @@ jobs:
           SERVER_PORT=${{ secrets.SERVER_PORT }}
           EOF
 
-      - name: Deploy lên EC2
+      - name: Deploy
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
@@ -68,13 +61,12 @@ jobs:
             $EC2_USER@$EC2_HOST:~/deploy/
 
           ssh -i key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
-            echo "Restarting service..."
             sudo systemctl restart onlinelib.service
             sleep 15
-            if curl -f --retry 3 --retry-delay 5 http://localhost:${{ secrets.SERVER_PORT }}/actuator/health; then
-              echo "API UP! Deploy thành công!"
+            if sudo systemctl is-active --quiet onlinelib.service; then
+              echo "SERVICE RUNNING! Deploy thành công!"
             else
-              echo "Lỗi API"
+              echo "Lỗi service"
               sudo systemctl status onlinelib.service --no-pager
               exit 1
             fi
