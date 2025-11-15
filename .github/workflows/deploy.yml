@@ -1,9 +1,16 @@
+# .github/workflows/deploy.yml
 name: Deploy Backend to EC2
 
+# Chỉ chạy khi:
+# - Push vào develop hoặc main
+# - Có thay đổi trong backend/ hoặc file workflow
 on:
   push:
     branches: [ develop, main ]
-  workflow_dispatch:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:  # Cho phép chạy tay
 
 jobs:
   deploy:
@@ -23,9 +30,9 @@ jobs:
         run: |
           cd backend
           mvn -B clean package -DskipTests
-          ls -la target/
+          echo "Build thành công: $(ls target/*.jar)"
 
-      - name: Create .env from secrets
+      - name: Tạo file .env từ GitHub Secrets
         run: |
           cat > .env << EOF
           DB_URL=${{ secrets.RDS_URL }}
@@ -36,24 +43,39 @@ jobs:
           JWT_SECRET=${{ secrets.JWT_SECRET_KEY }}
           SERVER_PORT=${{ secrets.SERVER_PORT }}
           EOF
+          echo ".env đã tạo với SERVER_PORT=${{ secrets.SERVER_PORT }}"
 
-      - name: Deploy to EC2
+      - name: Deploy lên EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          echo "$EC2_SSH_KEY" > key
-          chmod 600 key
+          # Tạo SSH key tạm
+          echo "$EC2_SSH_KEY" > deploy_key
+          chmod 600 deploy_key
 
-          scp -i key -o StrictHostKeyChecking=no \
+          # Copy file
+          scp -i deploy_key -o StrictHostKeyChecking=no \
             backend/target/*.jar \
             backend/src/main/resources/application*.properties \
             .env \
             $EC2_USER@$EC2_HOST:~/deploy/
 
-          ssh -i key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+          # Restart + chờ + test API
+          ssh -i deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+            echo "Đang restart service..."
             sudo systemctl restart onlinelib.service
-            echo "Deploy thành công!"
-            curl -f http://localhost:8080/actuator/health || exit 1
+
+            echo "Chờ 15s để Spring Boot khởi động..."
+            sleep 15
+
+            echo "Kiểm tra API..."
+            if curl -f --retry 3 --retry-delay 5 http://localhost:${{ secrets.SERVER_PORT }}/actuator/health; then
+              echo "API UP! Deploy thành công!"
+            else
+              echo "Lỗi: API không phản hồi"
+              sudo systemctl status onlinelib.service --no-pager
+              exit 1
+            fi
           EOF
