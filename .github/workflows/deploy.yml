@@ -46,29 +46,35 @@ jobs:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
           echo "$EC2_SSH_KEY" > key && chmod 600 key
-
-          # FIX SSH: Tắt kiểm tra host key
           ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
 
+          # Chỉ copy 2 file cần thiết
           scp -i key -o StrictHostKeyChecking=no \
             backend/target/*.jar \
-            backend/src/main/resources/application*.properties \
+            backend/src/main/resources/application.properties \
             .env \
             $EC2_USER@$EC2_HOST:~/deploy/
 
           ssh -i key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+            cd ~/deploy
+
+            # Tạo file .properties từ .env
+            cp .env application-local.properties
+
+            # Restart service
             sudo systemctl restart onlinelib.service
             sleep 15
+
             if sudo systemctl is-active --quiet onlinelib.service; then
               echo "BACKEND: SERVICE RUNNING!"
             else
               echo "BACKEND: SERVICE FAILED!"
-              sudo systemctl status onlinelib.service --no-pager
+              journalctl -u onlinelib.service -n 50 --no-pager
               exit 1
             fi
           EOF
 
-  # ==================== DEPLOY FRONTEND (NEXT.JS) ====================
+  # ==================== DEPLOY FRONTEND ====================
   deploy-frontend:
     needs: deploy-backend
     runs-on: ubuntu-latest
@@ -83,37 +89,29 @@ jobs:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
           echo "$EC2_SSH_KEY" > key && chmod 600 key
-
-          # FIX SSH: Tắt kiểm tra host key + thêm vào known_hosts
           ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
           mkdir -p ~/.ssh
           echo -e "Host $EC2_HOST\n  StrictHostKeyChecking no\n  UserKnownHostsFile=/dev/null" > ~/.ssh/config
 
-          # Copy code frontend
           rsync -avz --delete \
             -e "ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             frontend/ $EC2_USER@$EC2_HOST:/home/ubuntu/next-app/
 
-          # Deploy trên EC2
           ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu/next-app
 
-            # Tạo file .env.production
+            # Tạo .env.production
             echo "NEXT_PUBLIC_API_URL=https://onlinelibmana.online/api" > .env.production
 
-            # Cài đặt + build + restart
             yarn install --production --frozen-lockfile
             yarn build
 
-            # PM2: restart hoặc start
             if pm2 describe next-app > /dev/null 2>&1; then
               pm2 restart next-app
             else
               pm2 start ecosystem.config.js --name next-app
             fi
 
-            # Log
             echo "FRONTEND: DEPLOYED!"
             pm2 status
-            pm2 logs next-app --lines 5
           EOF
