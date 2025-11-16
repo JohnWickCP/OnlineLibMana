@@ -54,6 +54,7 @@ public class RegisterController {
         String token = authenticationService.generateToken(newUser);
         String magicLink = "https://onlinelibmana.online/magic/login/" + token;
 
+
         emailService.sendEmail(
                 newUser.getEmail(),
                 "Xác thực tài khoản",
