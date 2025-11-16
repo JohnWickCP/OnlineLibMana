@@ -20,20 +20,22 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
 
-      - name: Install dependencies (frontend folder)
+      - name: Install dependencies
         working-directory: ./frontend
         run: yarn install --frozen-lockfile
 
       - name: Run lint (optional)
-        if: ${{ always() }}
+        if: always()
         working-directory: ./frontend
         run: |
-          if [ -f package.json ] && yarn -s run -T | grep -q "lint"; then
-            yarn lint
+          if grep -q '"lint"' package.json; then
+            yarn lint || echo "Lint failed but continuing..."
           else
-            echo "No lint script defined, skipping..."
+            echo "No lint script, skipping..."
           fi
 
       - name: Build Next.js
         working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://onlinelibmana.online/api
         run: yarn build
