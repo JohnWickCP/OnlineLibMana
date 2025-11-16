@@ -36,7 +36,7 @@ public class MagicLoginController {
 
             // Chuyển hướng về trang login FE
             return ResponseEntity.status(302)
-                    .header("Location", "http://localhost:3000/login")
+                    .header("Location", "https://onlinelibmana.online/auth/login")
                     .build();
 
         } catch (Exception e) {
