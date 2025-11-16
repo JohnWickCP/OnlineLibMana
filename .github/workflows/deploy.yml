@@ -2,13 +2,17 @@ name: Deploy Full-Stack
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
   workflow_dispatch:
 
 jobs:
   # ==================== DEPLOY BACKEND ====================
   deploy-backend:
     runs-on: ubuntu-latest
+    # Chỉ deploy khi push hoặc manual, KHÔNG deploy khi PR
+    if: github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,7 +65,7 @@ jobs:
             .env \
             $EC2_USER@$EC2_HOST:~/deploy/.env
 
-          # Copy application.properties (đã fix biến môi trường)
+          # Copy application.properties
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             backend/src/main/resources/application.properties \
             $EC2_USER@$EC2_HOST:~/deploy/application.properties
@@ -90,6 +94,8 @@ jobs:
   deploy-frontend:
     needs: deploy-backend
     runs-on: ubuntu-latest
+    # Chỉ deploy khi push hoặc manual, KHÔNG deploy khi PR
+    if: github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
