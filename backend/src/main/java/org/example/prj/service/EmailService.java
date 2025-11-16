@@ -28,7 +28,7 @@ public class EmailService {
             String htmlContent = """
                     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
                         <h2>Xin chào!</h2>
-                        <p>Cảm ơn bạn đã đăng ký tài khoản.</p>
+                        <p>Cảm ơn bạn đã đăng ký tài khoản.Link này chỉ có hiệu lực trong 5 phút</p>
                         <p>Tài khoản của bạn đã được tạo. Nhấn vào link sau để xác thực và đến trang đăng nhập:</p>
                         <p>
                             <a href="%s" style="
