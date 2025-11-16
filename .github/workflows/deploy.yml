@@ -1,11 +1,8 @@
-# .github/workflows/deploy.yml
 name: Deploy Full-Stack
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -39,37 +36,55 @@ jobs:
           SERVER_PORT=${{ secrets.SERVER_PORT }}
           EOF
 
+      - name: Setup SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
+
       - name: Deploy Backend to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          echo "$EC2_SSH_KEY" > key && chmod 600 key
-          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-
-          # Copy file cần thiết
-          scp -i key -o StrictHostKeyChecking=no \
+          # Copy JAR + config
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             backend/target/*.jar \
-            backend/src/main/resources/application.properties \
+            $EC2_USER@$EC2_HOST:~/deploy/OnlineLibMana.jar
+
+          # Copy .env
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             .env \
-            $EC2_USER@$EC2_HOST:~/deploy/
+            $EC2_USER@$EC2_HOST:~/deploy/.env
 
-          ssh -i key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+          # Copy application.properties (đã fix biến môi trường)
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            backend/src/main/resources/application.properties \
+            $EC2_USER@$EC2_HOST:~/deploy/application.properties
+
+          # Restart service
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'ENDSSH'
             cd ~/deploy
-            cp .env application-local.properties
-
+            
+            # Restart backend
             sudo systemctl restart onlinelib.service
-            sleep 15
-
+            
+            # Wait and check
+            sleep 10
+            
             if sudo systemctl is-active --quiet onlinelib.service; then
-              echo "BACKEND: SERVICE RUNNING!"
+              echo "✅ BACKEND: Running successfully!"
+              sudo systemctl status onlinelib.service --no-pager -n 5
             else
-              echo "BACKEND: SERVICE FAILED!"
-              journalctl -u onlinelib.service -n 50 --no-pager
+              echo "❌ BACKEND: Failed to start!"
+              sudo journalctl -u onlinelib.service -n 50 --no-pager
               exit 1
             fi
-          EOF
+          ENDSSH
 
   # ==================== DEPLOY FRONTEND ====================
   deploy-frontend:
@@ -88,45 +103,57 @@ jobs:
 
       - name: Install & Build Frontend
         working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://onlinelibmana.online/api
         run: |
           yarn install --frozen-lockfile
           yarn build
+
+      - name: Setup SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Deploy Frontend to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          echo "$EC2_SSH_KEY" > key && chmod 600 key
-          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-          mkdir -p ~/.ssh
-          echo -e "Host $EC2_HOST\n  StrictHostKeyChecking no\n  UserKnownHostsFile=/dev/null" > ~/.ssh/config
-
-          # Copy toàn bộ frontend (đã build)
+          # Sync toàn bộ frontend (đã build)
           rsync -avz --delete \
-            -e "ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            frontend/ $EC2_USER@$EC2_HOST:/home/ubuntu/next-app/
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            --exclude '.env*' \
+            frontend/ $EC2_USER@$EC2_HOST:~/next-app/
 
-          # Tạo .env + restart systemd
-          ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST << 'EOF'
-            cd /home/ubuntu/next-app
+          # Create .env.production + restart
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'ENDSSH'
+            cd ~/next-app
 
             # Tạo .env.production
             echo "NEXT_PUBLIC_API_URL=https://onlinelibmana.online/api" > .env.production
 
-            # Cài production deps (không build lại)
+            # Install production dependencies only
             yarn install --production --frozen-lockfile
 
-            # Restart systemd
+            # Restart service
             sudo systemctl restart next-app.service
+            
+            # Wait and check
             sleep 10
 
             if sudo systemctl is-active --quiet next-app.service; then
-              echo "FRONTEND: SERVICE RUNNING!"
+              echo "✅ FRONTEND: Running successfully!"
+              sudo systemctl status next-app.service --no-pager -n 5
             else
-              echo "FRONTEND: SERVICE FAILED!"
+              echo "❌ FRONTEND: Failed to start!"
               sudo journalctl -u next-app.service -n 50 --no-pager
               exit 1
             fi
-          EOF
+          ENDSSH
