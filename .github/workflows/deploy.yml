@@ -48,7 +48,7 @@ jobs:
           echo "$EC2_SSH_KEY" > key && chmod 600 key
           ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
 
-          # Chỉ copy 2 file cần thiết
+          # Copy file cần thiết
           scp -i key -o StrictHostKeyChecking=no \
             backend/target/*.jar \
             backend/src/main/resources/application.properties \
@@ -57,11 +57,8 @@ jobs:
 
           ssh -i key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
             cd ~/deploy
-
-            # Tạo file .properties từ .env
             cp .env application-local.properties
 
-            # Restart service
             sudo systemctl restart onlinelib.service
             sleep 15
 
@@ -82,7 +79,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy Next.js to EC2
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install & Build Frontend
+        working-directory: ./frontend
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Deploy Frontend to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
@@ -93,25 +103,30 @@ jobs:
           mkdir -p ~/.ssh
           echo -e "Host $EC2_HOST\n  StrictHostKeyChecking no\n  UserKnownHostsFile=/dev/null" > ~/.ssh/config
 
+          # Copy toàn bộ frontend (đã build)
           rsync -avz --delete \
             -e "ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             frontend/ $EC2_USER@$EC2_HOST:/home/ubuntu/next-app/
 
+          # Tạo .env + restart systemd
           ssh -i key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu/next-app
 
             # Tạo .env.production
             echo "NEXT_PUBLIC_API_URL=https://onlinelibmana.online/api" > .env.production
 
+            # Cài production deps (không build lại)
             yarn install --production --frozen-lockfile
-            yarn build
 
-            if pm2 describe next-app > /dev/null 2>&1; then
-              pm2 restart next-app
+            # Restart systemd
+            sudo systemctl restart next-app.service
+            sleep 10
+
+            if sudo systemctl is-active --quiet next-app.service; then
+              echo "FRONTEND: SERVICE RUNNING!"
             else
-              pm2 start ecosystem.config.js --name next-app
+              echo "FRONTEND: SERVICE FAILED!"
+              sudo journalctl -u next-app.service -n 50 --no-pager
+              exit 1
             fi
-
-            echo "FRONTEND: DEPLOYED!"
-            pm2 status
           EOF
