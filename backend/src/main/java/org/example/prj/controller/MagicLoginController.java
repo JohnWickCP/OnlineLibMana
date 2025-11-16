@@ -19,7 +19,7 @@ public class MagicLoginController {
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
 
-    @GetMapping("/login/token={token}")
+    @GetMapping("/login/{token}")
     public ResponseEntity<Void> loginWithMagicLink(@PathVariable("token") String token) {
         try {
             var jwt = authenticationService.verifyToken(token, false);
