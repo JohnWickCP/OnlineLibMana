@@ -30,15 +30,15 @@ jobs:
 
       - name: Create .env for Backend
         run: |
-          cat > .env << EOF
-          DB_URL=${{ secrets.RDS_URL }}
-          DB_USER=${{ secrets.RDS_USER }}
-          DB_PASS=${{ secrets.RDS_PASS }}
-          EMAIL_USER=${{ secrets.EMAIL_USER }}
-          EMAIL_PASS=${{ secrets.EMAIL_PASS }}
-          JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-          SERVER_PORT=${{ secrets.SERVER_PORT }}
-          EOF
+              cat > .env << EOF
+              DB_URL=${{ secrets.RDS_URL }}
+              DB_USER=${{ secrets.RDS_USER }}
+              DB_PASS=${{ secrets.RDS_PASS }}
+              DB_EMAIL=${{ secrets.EMAIL_USER }}
+              DB_EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+              JWT_SECRET=${{ secrets.JWT_SECRET_KEY }}
+              SERVER_PORT=${{ secrets.SERVER_PORT }}
+              EOF
 
       - name: Setup SSH
         env:
@@ -64,11 +64,6 @@ jobs:
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             .env \
             $EC2_USER@$EC2_HOST:~/deploy/.env
-
-          # Copy application.properties
-          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            backend/src/main/resources/application.properties \
-            $EC2_USER@$EC2_HOST:~/deploy/application.properties
 
           # Restart service
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'ENDSSH'
