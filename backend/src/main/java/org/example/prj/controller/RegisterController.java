@@ -52,7 +52,7 @@ public class RegisterController {
 
         // Sinh token magic link
         String token = authenticationService.generateToken(newUser);
-        String magicLink = "http://localhost:8081/magic/login/token=" + token;
+        String magicLink = "https://api.onlinelibmana.online/magic/login/" + token;
 
         emailService.sendEmail(
                 newUser.getEmail(),
