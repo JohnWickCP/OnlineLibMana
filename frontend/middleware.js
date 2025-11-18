@@ -15,6 +15,11 @@ export function middleware(request) {
 
   // Protect admin routes
   if (pathname.startsWith('/admin')) {
+    // Allow the admin login page itself so we don't redirect into a loop
+    if (pathname.startsWith('/admin/login')) {
+      return NextResponse.next();
+    }
+
     if (!token || role !== 'ADMIN') {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
