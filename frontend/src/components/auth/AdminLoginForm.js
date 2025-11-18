@@ -43,7 +43,6 @@ export default function AdminLoginForm() {
       await authLogin(formData.email, formData.password);
       router.push("/admin/books");
     } catch (err) {
-  // Normalize different error shapes and show a friendly message
   const status = err?.response?.status;
       const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
 

@@ -45,11 +45,6 @@ export default function UserLoginForm() {
 
       router.push("/books");
     } catch (err) {
-      // Normalize different error shapes and show a friendly message
-      // Possible shapes:
-      // - axios-like: err.response?.status, err.response?.data?.message
-      // - fetch-like / custom: err.message
-      // - network/timeout: err.code === 'ECONNABORTED' or other codes
   const status = err?.response?.status;
       const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
 
