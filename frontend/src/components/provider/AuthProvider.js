@@ -12,16 +12,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Restore auth from localStorage
+  // Restore auth state from localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
     const storedUser = localStorage.getItem('user');
     const storedRole = localStorage.getItem('userRole');
 
-    if (storedToken && storedUser) {
+    if (storedToken && storedUser && storedRole) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
-      setRole(storedRole || null);
+      setRole(storedRole);
       setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
@@ -32,39 +32,32 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await authAPI.login({ email, password });
+       const response = await authAPI.login({ email, password });
 
-      // Lấy token từ API
-      const authToken =
-        response?.result?.token ||
-        response?.data?.result?.token ||
-        response?.token;
+    const authToken = response.token;
+    const userRole = response.role;
+    const userObject = { email };
 
-      if (!authToken) throw new Error("Token không hợp lệ");
+    // Set state
+    setToken(authToken);
+    setRole(userRole);
+    setUser(userObject);
+    setIsAuthenticated(true);
 
-      // Lấy role từ API
-      const userRole =
-        response?.result?.role ||
-        response?.data?.result?.role ||
-        null;
+    // Lưu localStorage
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('userRole', userRole);
+    localStorage.setItem('user', JSON.stringify(userObject));
 
-      if (!userRole) throw new Error("Role không hợp lệ");
-
-      // Set state
-      setToken(authToken);
-      setRole(userRole);
-      setUser({ email });
-
-      setIsAuthenticated(true);
-
-      // Save localStorage
-      localStorage.setItem('authToken', authToken);
-      localStorage.setItem('userRole', userRole);
-      localStorage.setItem('user', JSON.stringify({ email }));
-
-      return { token: authToken, role: userRole };
+    return { token: authToken, role: userRole };
     } catch (error) {
-      console.error(error);
+       if (error.message === 'User not existed') {
+    alert('Người dùng không tồn tại. Vui lòng đăng ký trước.');
+  } else if (error.message === 'Password incorrect') {
+    alert('Mật khẩu không đúng.');
+  } else {
+    alert(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+  }
       setIsAuthenticated(false);
       throw error;
     }
