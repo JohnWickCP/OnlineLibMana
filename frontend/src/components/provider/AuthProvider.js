@@ -10,130 +10,68 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if user is already logged in on mount
+  // Restore auth state from localStorage
   useEffect(() => {
-  const initAuth = () => {
-    const storedToken = typeof window !== 'undefined' 
-      ? localStorage.getItem('authToken') 
-      : null;
-    const storedUser = typeof window !== 'undefined' 
-      ? localStorage.getItem('user') 
-      : null;
+    const storedToken = localStorage.getItem('authToken');
+    const storedUser = localStorage.getItem('user');
+    const storedRole = localStorage.getItem('userRole');
 
-    // ✅ Chỉ cần token và user
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        setRole('USER');
-        setIsAuthenticated(true);
-        console.log('✅ Auth restored from localStorage');
-      } catch (e) {
-        console.error('Failed to parse stored user:', e);
-        setIsAuthenticated(false);
-      }
+    if (storedToken && storedUser && storedRole) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+      setRole(storedRole);
+      setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
     }
-    setLoading(false);
-  };
 
-  initAuth();
-}, []);
+    setLoading(false);
+  }, []);
 
   const login = async (email, password) => {
     try {
-      const response = await authAPI.login({ email, password });
+       const response = await authAPI.login({ email, password });
 
-      // authAPI.login may return a { success: false, status, message } object
-      // instead of throwing. Handle that shape here so we keep correct status.
-      if (response && response.success === false) {
-        const err = new Error(response.message || 'Đăng nhập thất bại');
-        err.status = response.status;
-        err.response = { data: { message: response.message } };
-        throw err;
-      }
+    const authToken = response.token;
+    const userRole = response.role;
+    const userObject = { email };
 
-      // Support different possible shapes returned by authAPI.login
-      const authToken = response?.token || response?.data?.result?.token || response?.data?.token || response?.result?.token;
-      if (!authToken) {
-        const err = new Error('Token không hợp lệ');
-        err.response = response;
-        throw err;
-      }
+    // Set state
+    setToken(authToken);
+    setRole(userRole);
+    setUser(userObject);
+    setIsAuthenticated(true);
 
-      const userData = response.user || (response.data && response.data.result && response.data.result.user) || response.data?.user || response.result?.user || { email };
+    // Lưu localStorage
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('userRole', userRole);
+    localStorage.setItem('user', JSON.stringify(userObject));
 
-      setToken(authToken);
-      setUser(userData);
-      setIsAuthenticated(true);
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('authToken', authToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-      }
-
-      return { token: authToken, user: userData };
+    return { token: authToken, role: userRole };
     } catch (error) {
+       if (error.message === 'User not existed') {
+    alert('Người dùng không tồn tại. Vui lòng đăng ký trước.');
+  } else if (error.message === 'Password incorrect') {
+    alert('Mật khẩu không đúng.');
+  } else {
+    alert(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+  }
       setIsAuthenticated(false);
-
-      // Normalize a friendly message but preserve original response/code for callers
-      const status = error?.response?.status;
-      const apiMessage = error?.response?.data?.message || error?.response?.data?.error;
-
-      let message = 'Đăng nhập thất bại';
-      if (status === 401) {
-        message = 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.';
-      } else if (status === 404) {
-        message = 'Tài khoản không tồn tại. Vui lòng kiểm tra lại.';
-      } else if (error?.code === 'ECONNABORTED') {
-        message = 'Kết nối timeout. Vui lòng thử lại.';
-      } else if (apiMessage) {
-        message = String(apiMessage);
-      }
-
-      const err = new Error(message);
-      err.status = status;
-      err.code = error?.code;
-      err.response = error?.response;
-      // preserve original error for deeper debugging if needed
-      err.original = error;
-      err.originalMessage = error?.message;
-      throw err;
+      throw error;
     }
   };
 
-
   const logout = () => {
-    // Clear memory state
     setToken(null);
     setUser(null);
     setRole(null);
-    setIsAuthenticated(false); 
+    setIsAuthenticated(false);
 
-    // Clear localStorage
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('authToken');
-      window.localStorage.removeItem('user');
-      window.localStorage.removeItem('userRole');
-    }
-  };
-
-  const updateUser = (updatedUserData) => {
-    setUser(updatedUserData);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('user', JSON.stringify(updatedUserData));
-    }
-  };
-
-  const isAdmin = () => {
-    return role === 'ADMIN';
-  };
-
-  const isUser = () => {
-    return role === 'USER';
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userRole');
   };
 
   const value = {
@@ -141,12 +79,11 @@ export function AuthProvider({ children }) {
     token,
     role,
     loading,
-    isAuthenticated, 
+    isAuthenticated,
     login,
     logout,
-    updateUser,
-    isAdmin,
-    isUser
+    isAdmin: () => role === 'ADMIN',
+    isUser: () => role === 'USER',
   };
 
   return (

@@ -93,49 +93,39 @@ export const authAPI = {
   },
 
   login: async (credentials) => {
-    try {
-      const response = await api.post('/api/auth/login', {
-        email: credentials.email || credentials.username,
-        password: credentials.password,
-      });
-      
-      if (response.data && response.data.result) {
-        return {
-          success: true,
-          token: response.data.result.token,
-          user: {
-            email: credentials.email || credentials.username,
-            role: 'USER',
-          },
-        };
-      }
-      
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      // Convert axios error into a thrown Error with useful metadata so callers
-      // can handle it uniformly (AuthProvider expects thrown errors).
-      if (error.response) {
-        const message = error.response.data?.message || error.response.data?.msg || 'Đăng nhập thất bại';
-        const err = new Error(String(message));
-        err.status = error.response.status;
-        err.response = error.response;
-        err.code = error.code;
-        throw err;
-      }
+  try {
+    const response = await api.post('/api/auth/login', {
+      email: credentials.email || credentials.username,
+      password: credentials.password,
+    });
 
-      if (error.request) {
-        const err = new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
-        err.status = 0;
-        err.request = error.request;
-        throw err;
-      }
+    // Lấy token và role từ response.data.result
+    const result = response.data.result;
 
-      throw error;
+    if (!result?.token) throw new Error('Token không hợp lệ');
+    if (!result?.role) throw new Error('Role không hợp lệ');
+
+    return {
+      success: true,
+      token: result.token,
+      role: result.role,
+    };
+  } catch (error) {
+    if (error.response) {
+      const message = error.response.data?.message || error.response.data?.msg || 'Đăng nhập thất bại';
+      const err = new Error(String(message));
+      err.status = error.response.status;
+      throw err;
     }
-  },
+    if (error.request) {
+      const err = new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+      err.status = 0;
+      throw err;
+    }
+    throw error;
+  }
+},
+
 
   logout: async () => {
     try {
