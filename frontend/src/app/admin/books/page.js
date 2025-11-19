@@ -6,11 +6,38 @@ import Link from "next/link";
 import { booksAPI } from "@/lib/api";
 import { Search, Plus } from "lucide-react";
 import BooksList from "@/components/shared/BooksList";
+import useAuth from "@/components/provider/useAuth";
 
 function AdminBooksContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isAuthenticated, loading } = useAuth(); // <-- check auth
   const [searchInput, setSearchInput] = useState("");
+
+  // Redirect nếu không authenticated (sau khi loading xong)
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      // replace để người dùng không back về trang protected
+      router.replace("/admin/login");
+    }
+  }, [loading, isAuthenticated, router]);
+
+  // Nếu vẫn đang load auth, hiển thị placeholder (hoặc null)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#E9E7E0]">
+        <div className="container mx-auto px-6 py-8">
+          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="h-4 w-64 bg-gray-200 rounded animate-pulse mb-6"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Nếu đã load xong và chưa authenticated thì không render nội dung
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Set search input from URL on mount
   useEffect(() => {
