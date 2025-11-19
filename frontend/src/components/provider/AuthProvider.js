@@ -108,20 +108,28 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    setRole(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      // gọi server để server xóa cookie HttpOnly (nếu có)
+      await authAPI.logout();
+    } catch (e) {
+      console.warn('Server logout failed (continuing to clear client state):', e);
+      // tiếp tục clear client-side anyway
+    } finally {
+      // Client-side clear
+      setToken(null);
+      setUser(null);
+      setRole(null);
+      setIsAuthenticated(false);
 
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
 
-    // --- NEW: remove cookies so middleware won't see them anymore ---
-    deleteCookie('auth_token');
-    deleteCookie('user_role');
-    // --------------------------------------------------------------
+      // remove client-set cookies (non-HttpOnly)
+      deleteCookie('auth_token');
+      deleteCookie('user_role');
+    }
   };
 
   const value = {

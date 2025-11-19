@@ -8,6 +8,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  withCredentials: true,
 });
 
 api.interceptors.request.use(
@@ -92,35 +93,22 @@ export const authAPI = {
     }
   },
 
-  login: async (credentials) => {
+  // trong authAPI.logout (thay thế phần logout hiện tại)
+logout: async () => {
   try {
-    const response = await api.post('/api/auth/login', {
-      email: credentials.email || credentials.username,
-      password: credentials.password,
-    });
-
-    // Lấy token và role từ response.data.result
-    const result = response.data.result;
-
-    if (!result?.token) throw new Error('Token không hợp lệ');
-    if (!result?.role) throw new Error('Role không hợp lệ');
-
-    return {
-      success: true,
-      token: result.token,
-      role: result.role,
-    };
-  } catch (error) {
-    if (error.response) {
-      const message = error.response.data?.message || error.response.data?.msg || 'Đăng nhập thất bại';
-      const err = new Error(String(message));
-      err.status = error.response.status;
-      throw err;
+    // gửi yêu cầu logout tới server KÈM cookie (credentials)
+    const response = await api.post('/api/auth/logout', {}, { withCredentials: true });
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
     }
-    if (error.request) {
-      const err = new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
-      err.status = 0;
-      throw err;
+    return response.data;
+  } catch (error) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
     }
     throw error;
   }
