@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 10000,
   withCredentials: true,
@@ -13,14 +13,13 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = typeof window !== 'undefined' 
-      ? localStorage.getItem('authToken') 
-      : null;
-    
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error) => {
@@ -34,10 +33,10 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userRole');
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userRole");
       }
     }
     return Promise.reject(error);
@@ -47,8 +46,8 @@ api.interceptors.response.use(
 export const authAPI = {
   register: async (data) => {
     try {
-      const response = await api.post('/api/auth/register', data);
-      
+      const response = await api.post("/api/auth/register", data);
+
       return {
         success: true,
         data: response.data,
@@ -59,14 +58,15 @@ export const authAPI = {
         const statusCode = error.response.status;
         const errorData = error.response.data;
 
-        let defaultMessage = 'Đăng ký thất bại';
-        
+        let defaultMessage = "Đăng ký thất bại";
+
         if (statusCode === 409) {
-          defaultMessage = 'Email này đã được đăng ký. Vui lòng sử dụng email khác.';
+          defaultMessage =
+            "Email này đã được đăng ký. Vui lòng sử dụng email khác.";
         } else if (statusCode === 400) {
-          defaultMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
+          defaultMessage = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.";
         } else if (statusCode === 500) {
-          defaultMessage = 'Lỗi server. Vui lòng thử lại sau.';
+          defaultMessage = "Lỗi server. Vui lòng thử lại sau.";
         }
 
         return {
@@ -76,79 +76,87 @@ export const authAPI = {
           message: errorData?.message || errorData?.msg || defaultMessage,
         };
       }
-      
+
       if (error.request) {
         return {
           success: false,
           status: 0,
-          message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
+          message:
+            "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.",
         };
       }
 
       return {
         success: false,
         status: 0,
-        message: error.message || 'Đăng ký thất bại. Vui lòng thử lại.',
+        message: error.message || "Đăng ký thất bại. Vui lòng thử lại.",
       };
     }
   },
 
   login: async (credentials) => {
-  try {
-    const response = await api.post('/api/auth/login', {
-      email: credentials.email || credentials.username,
-      password: credentials.password,
-    });
+    try {
+      const response = await api.post("/api/auth/login", {
+        email: credentials.email || credentials.username,
+        password: credentials.password,
+      });
 
-    // Lấy token và role từ response.data.result
-    const result = response.data.result;
+      const result = response.data.result;
 
-    if (!result?.token) throw new Error('Token không hợp lệ');
-    if (!result?.role) throw new Error('Role không hợp lệ');
+      if (!result?.token) throw new Error("Token không hợp lệ");
+      if (!result?.role) throw new Error("Role không hợp lệ");
 
-    return {
-      success: true,
-      token: result.token,
-      role: result.role,
-    };
-  } catch (error) {
-    if (error.response) {
-      const message = error.response.data?.message || error.response.data?.msg || 'Đăng nhập thất bại';
-      const err = new Error(String(message));
-      err.status = error.response.status;
-      throw err;
+      return {
+        success: true,
+        token: result.token,
+        role: result.role,
+      };
+    } catch (error) {
+      if (error.response) {
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          "Đăng nhập thất bại";
+        const err = new Error(String(message));
+        err.status = error.response.status;
+        throw err;
+      }
+      if (error.request) {
+        const err = new Error(
+          "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng."
+        );
+        err.status = 0;
+        throw err;
+      }
+      throw error;
     }
-    if (error.request) {
-      const err = new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
-      err.status = 0;
-      throw err;
-    }
-    throw error;
-  }
-},
-
+  },
 
   logout: async () => {
-  try {
-    // gửi yêu cầu logout tới server KÈM cookie (credentials)
-    const response = await api.post('/api/auth/logout', {}, { withCredentials: true });
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('userRole');
+    try {
+      // gửi yêu cầu logout tới server KÈM cookie (credentials)
+      const response = await api.post(
+        "/api/auth/logout",
+        {},
+        { withCredentials: true }
+      );
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userRole");
+      }
+      return response.data;
+    } catch (error) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userRole");
+      }
+      throw error;
     }
-    return response.data;
-  } catch (error) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('userRole');
-    }
-    throw error;
-  }
-},
+  },
   googleLogin: async () => {
-    const response = await api.get('/api/auth/google');
+    const response = await api.get("/api/auth/google");
     return response.data;
   },
 
@@ -160,11 +168,11 @@ export const authAPI = {
 
 export const booksAPI = {
   getAllBooksWithPagination: async (page = 0, size = 24) => {
-    const response = await api.get('/book/listbooks', {
+    const response = await api.get("/book/listbooks", {
       params: {
         page: page,
-        size: size
-      }
+        size: size,
+      },
     });
     return response.data;
   },
@@ -185,7 +193,7 @@ export const booksAPI = {
   },
 
   addBook: async (bookData) => {
-    const response = await api.post('/book/addBook', bookData);
+    const response = await api.post("/book/addBook", bookData);
     return response.data;
   },
 
@@ -202,11 +210,11 @@ export const booksAPI = {
 
 export const userAPI = {
   getAllUsers: async (page = 0, size = 20) => {
-    const response = await api.get('/home/listUser', {
+    const response = await api.get("/home/listUser", {
       params: {
         page: page,
-        size: size
-      }
+        size: size,
+      },
     });
     return response.data;
   },
@@ -217,27 +225,33 @@ export const userAPI = {
   },
 
   addFolder: async (folderData) => {
-    const response = await api.post('/home/addFBfolder', folderData);
+    const response = await api.post("/home/addFBfolder", folderData);
     return response.data;
   },
 
   getAllFolders: async () => {
-    const response = await api.get('/home/getFBfolder');
+    const response = await api.get("/home/getFBfolder");
     return response.data;
   },
 
   addBookToFavorites: async (bookId, listId) => {
-    const response = await api.post(`/home/addFB/${bookId}/favourites/${listId}`);
+    const response = await api.post(
+      `/home/addFB/${bookId}/favourites/${listId}`
+    );
     return response.data;
   },
 
   addBookToFolder: async (folderName, bookId) => {
-    const response = await api.post(`/home/addBookToFolder/${folderName}/${bookId}`);
+    const response = await api.post(
+      `/home/addBookToFolder/${folderName}/${bookId}`
+    );
     return response.data;
   },
 
   addBookByStatus: async (bookId, status) => {
-    const response = await api.post(`/home/addBookByStatus/${bookId}/${status}`);
+    const response = await api.post(
+      `/home/addBookByStatus/${bookId}/${status}`
+    );
     return response.data;
   },
 
@@ -269,7 +283,7 @@ export const userAPI = {
 
 export const adminAPI = {
   getDashboard: async () => {
-    const response = await api.get('/admin/dashboard');
+    const response = await api.get("/admin/dashboard");
     return response.data;
   },
 };
