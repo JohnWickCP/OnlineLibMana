@@ -6,7 +6,7 @@ import Link from "next/link";
 import { booksAPI } from "@/lib/api";
 import { Search, Plus } from "lucide-react";
 import BooksList from "@/components/shared/BooksList";
-import useAuth from "@/components/provider/useAuth";
+import useAuth from "@/hooks/useAuth";
 
 function AdminBooksContent() {
   const searchParams = useSearchParams();
