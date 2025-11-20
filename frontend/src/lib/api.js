@@ -135,9 +135,12 @@ export const authAPI = {
   logout: async () => {
     try {
       // gửi yêu cầu logout tới server KÈM cookie (credentials)
+      // Note: nếu muốn gửi token trong body/headers, cần lấy token từ localStorage trước.
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
       const response = await api.post(
         "/api/auth/logout",
-        {token },
+        { token },
         { withCredentials: true }
       );
       if (typeof window !== "undefined") {
@@ -206,6 +209,13 @@ export const booksAPI = {
     const response = await api.delete(`/book/delete/${id}`);
     return response.data;
   },
+
+  
+
+  postViews: async (bookId) => {
+    const response = await api.post(`/book/views/${bookId}`);
+    return response.data;
+  },
 };
 
 export const userAPI = {
@@ -219,8 +229,37 @@ export const userAPI = {
     return response.data;
   },
 
+  // Gửi rating dưới dạng { point: number } vì backend swagger chỉ định "point"
+  postRating: async (bookId, point) => {
+    const payload = typeof point === "number" ? { point } : point;
+    const response = await api.post(`/home/reviewBook/${bookId}`, payload);
+    return response.data;
+  },
+  deleteBookByStatus: async (bookId) => {
+    const response = await api.delete(`/home/deleteBookByStatus/${bookId}`);
+    return response.data;
+  },
+
+  // reviewBook: chấp nhận cả { point } hoặc { rating } => chuyển sang { point }
   reviewBook: async (bookId, reviewData) => {
-    const response = await api.post(`/home/reviewBook/${bookId}`, reviewData);
+    // If reviewData is an object with rating or point, normalize to { point }
+    let payload;
+    if (typeof reviewData === "number") {
+      payload = { point: reviewData };
+    } else {
+      payload = {
+        point:
+          reviewData?.point ??
+          reviewData?.rating ??
+          (reviewData && reviewData.hasOwnProperty("comment") ? undefined : reviewData),
+      };
+      // remove undefined keys
+      if (payload.point === undefined) {
+        // fallback: try to send reviewData as-is
+        payload = reviewData;
+      }
+    }
+    const response = await api.post(`/home/reviewBook/${bookId}`, payload);
     return response.data;
   },
 
