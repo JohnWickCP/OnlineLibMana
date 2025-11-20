@@ -1,4 +1,5 @@
-// Suggested middleware fix (allow /admin/login and internal assets, then protect other /admin/*)
+// Suggested middleware fix: allow Next.js internals and common static paths,
+// protect /admin/* while avoiding redirect loops for internal asset requests.
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
@@ -9,16 +10,19 @@ export function middleware(request) {
     return NextResponse.redirect(new URL('/books', request.url));
   }
 
-  // Auth token check
+  // Auth token and role from cookies
   const token = request.cookies.get('auth_token')?.value;
   const role = request.cookies.get('user_role')?.value;
 
-  // Allow admin public pages and internal Next.js assets to pass through without auth check
-  // (avoid protecting the login page itself, which causes a redirect loop)
+  // Allow Next internals, API routes, static and public assets to pass through
+  // This prevents middleware from intercepting internal RSC/_next requests
   if (
-    pathname === '/admin/login' ||              // allow login page
-    pathname.startsWith('/admin/_next') ||      // allow next internals
-    pathname.startsWith('/admin/static')        // allow any static under admin if present
+    pathname === '/admin/login' ||     // allow login page
+    pathname.startsWith('/_next') ||   // NEXT internals (important)
+    pathname.startsWith('/static') ||  // static folder if any
+    pathname.startsWith('/assets') ||  // optional assets folder
+    pathname.startsWith('/api') ||     // next/api routes
+    pathname === '/favicon.ico'        // favicon
   ) {
     // If an already-logged-in user tries to visit /admin/login, redirect them away
     if (pathname === '/admin/login' && token) {
@@ -37,7 +41,7 @@ export function middleware(request) {
     }
   }
 
-  // Protect user dashboard
+  // Protect user dashboard (if you actually have /dashboard or /profile)
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/profile')) {
     if (!token) {
       return NextResponse.redirect(new URL('/auth/login', request.url));

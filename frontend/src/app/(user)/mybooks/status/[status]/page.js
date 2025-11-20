@@ -6,7 +6,7 @@ import BookCard from "@/components/shared/BookCard";
 import Pagination from "@/components/shared/Pagination";
 import { userAPI } from "@/lib/api";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, CheckCircle, Clock } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle, Clock, Trash2 } from "lucide-react";
 
 // Status configuration
 const STATUS_CONFIG = {
@@ -51,6 +51,9 @@ export default function BooksByStatusPage() {
   const [totalItems, setTotalItems] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
+  // Track per-book removing state
+  const [removingIds, setRemovingIds] = useState([]);
+
   // Validate status
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig?.icon;
@@ -69,22 +72,19 @@ export default function BooksByStatusPage() {
 
       console.log("📚 Fetching books with status:", status, "Page:", page);
 
-      // Backend dùng page 0-indexed
+      // Backend used page 0-indexed? adapt if needed on backend side
       const backendPage = page - 1;
 
-      // Gọi API với pagination
+      // Call API (if API supports pagination pass page/size; the existing userAPI.getBooksByStatus(status) maybe returns paginated result)
       const response = await userAPI.getBooksByStatus(status);
       console.log("📥 API Response:", response);
 
-      if (response.code === 1000 && response.result) {
+      if (response?.code === 1000 && response.result) {
         const result = response.result;
-
-        // Response có pagination structure
         setBooks(result.content || []);
         setTotalItems(result.totalElements || 0);
         setTotalPages(result.totalPages || 1);
       } else if (Array.isArray(response)) {
-        // Fallback: response trả về array trực tiếp
         setBooks(response);
         setTotalItems(response.length);
         setTotalPages(1);
@@ -95,7 +95,7 @@ export default function BooksByStatusPage() {
       }
     } catch (err) {
       console.error("❌ Error fetching books by status:", err);
-      setError(err.response?.data?.message || "Failed to load books");
+      setError(err?.response?.data?.message || "Failed to load books");
       setBooks([]);
       setTotalItems(0);
       setTotalPages(1);
@@ -103,6 +103,56 @@ export default function BooksByStatusPage() {
       setLoading(false);
     }
   };
+
+  // ===== XÓA SÁCH KHỎI STATUS =====
+  // --- Thay thế hàm handleRemoveFromStatus trong component BooksByStatusPage ---
+const handleRemoveFromStatus = async (bookId) => {
+  if (!confirm("Bạn có chắc muốn xóa cuốn sách này khỏi danh sách của bạn?")) {
+    return;
+  }
+
+  // Mark as removing (UI)
+  setRemovingIds((prev) => [...prev, bookId]);
+
+  try {
+    console.log("🗑️ Removing book from status:", bookId, status);
+
+    // Gọi API (bây giờ sẽ gọi /home/deleteBookByStatus/{bookId})
+    const resp = await userAPI.deleteBookByStatus(bookId);
+    console.log("🗑️ Remove response:", resp);
+
+    // Cập nhật UI local: loại sách khỏi state
+    setBooks((prev) => prev.filter((b) => String(b.id) !== String(bookId)));
+    setTotalItems((prev) => Math.max(0, prev - 1));
+
+    // Nếu trang hiện tại trống sau khi xóa và đang >1, lùi 1 trang
+    if (books.length === 1 && currentPage > 1) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      fetchBooksByStatus(newPage);
+    }
+
+    alert("✅ Đã xóa sách khỏi danh sách của bạn.");
+  } catch (err) {
+    // Log chi tiết để debug (status, body, message, config)
+    console.error("❌ Error removing book from status:", {
+      message: err?.message,
+      status: err?.response?.status,
+      responseData: err?.response?.data,
+      config: err?.config,
+    });
+
+    const serverMsg =
+      err?.response?.data?.message ||
+      err?.response?.data ||
+      err?.message ||
+      "Failed to remove book";
+    alert(`❌ ${serverMsg}`);
+  } finally {
+    // Unmark removing
+    setRemovingIds((prev) => prev.filter((id) => String(id) !== String(bookId)));
+  }
+};
 
   // ===== HANDLE PAGE CHANGE =====
   const handlePageChange = (page) => {
@@ -117,12 +167,14 @@ export default function BooksByStatusPage() {
       setCurrentPage(1); // Reset về trang 1 khi đổi status
       fetchBooksByStatus(1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   useEffect(() => {
     if (status && statusConfig && currentPage > 1) {
       fetchBooksByStatus(currentPage);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   // ===== INVALID STATUS =====
@@ -258,9 +310,28 @@ export default function BooksByStatusPage() {
           <>
             {/* Books Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {books.map((book) => (
-                <BookCard key={book.id} book={book} />
-              ))}
+              {books.map((book) => {
+                const isRemoving = removingIds.includes(String(book.id)) || removingIds.includes(book.id);
+                return (
+                  <div key={book.id} className="relative">
+                    <BookCard book={book} />
+                    {/* Remove button */}
+                    <div className="mt-2 flex justify-center">
+                      <button
+                        onClick={() => handleRemoveFromStatus(book.id)}
+                        disabled={isRemoving}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border ${
+                          isRemoving ? "bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed" : "bg-white text-red-600 border-red-200 hover:bg-red-50"
+                        }`}
+                        aria-label="Remove book from list"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>{isRemoving ? "Removing..." : "Remove"}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Pagination */}

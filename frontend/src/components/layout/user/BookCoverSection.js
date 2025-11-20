@@ -1,18 +1,14 @@
-/**
- * components/user/BookCoverSection.js
- * Component hiển thị bìa sách và các action buttons
- * Yêu cầu đăng nhập để sử dụng Want to Read và Rate Book
- */
-
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDown, ExternalLink, Star, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { userAPI } from "@/lib/api";
+import { userAPI, booksAPI } from "@/lib/api";
 
 export default function BookCoverSection({ bookData, bookId }) {
+  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [readingList, setReadingList] = useState("Want to Read");
   const [openList, setOpenList] = useState(false);
@@ -20,11 +16,15 @@ export default function BookCoverSection({ bookData, bookId }) {
   const [saving, setSaving] = useState(false);
   const [rating, setRating] = useState(false);
   const [customLists, setCustomLists] = useState([]);
+  const [avgRating, setAvgRating] = useState(0); // average rating to show when user hasn't rated
 
   // Load user's current rating khi component mount
   useEffect(() => {
     if (isAuthenticated && bookId) {
       loadUserRating();
+    } else if (bookId) {
+      // nếu chưa login vẫn muốn hiển thị average rating
+      loadAverageRating();
     }
   }, [isAuthenticated, bookId]);
 
@@ -44,15 +44,46 @@ export default function BookCoverSection({ bookData, bookId }) {
     fetchCustomLists();
   }, [isAuthenticated]);
 
-  // Load rating hiện tại của user cho sách này
+  // Load rating hiện tại của user cho sách này (nếu có), nếu không thì load average rating
   const loadUserRating = async () => {
     try {
-      // TODO: Khi backend có API lấy rating của user cho book cụ thể
-      // const response = await userAPI.getUserBookRating(bookId);
-      // setUserRating(response.rating || 0);
-      console.log("📊 Loading user rating for book:", bookId);
+      // Nếu backend cung cấp API user-specific rating cho 1 sách, gọi ở đây.
+      // Ví dụ giả định: userAPI.getUserBookRating(bookId) => { code: 1000, result: { rating: 3 } }
+      if (userAPI.getUserBookRating) {
+        const resp = await userAPI.getUserBookRating(bookId);
+        const r = resp?.result?.rating ?? 0;
+        setUserRating(r);
+
+        // Nếu user không có rating thì load average
+        if (!r) {
+          await loadAverageRating();
+        }
+
+        console.log("📊 Loaded user rating:", r);
+        return;
+      }
+
+      // Fallback: nếu chưa có API user-specific, load average rating
+      await loadAverageRating();
+      console.log("📊 No user-specific rating API available yet.");
     } catch (error) {
       console.error("Error loading user rating:", error);
+      // fallback to average rating
+      await loadAverageRating();
+    }
+  };
+
+  // Load average rating (hiển thị khi user chưa rate)
+  const loadAverageRating = async () => {
+    try {
+      if (!booksAPI.getBookRating) return;
+      const resp = await booksAPI.getBookRating(bookId);
+      // backend có thể trả nhiều shape khác nhau
+      const avg = resp?.result?.average ?? resp?.result ?? resp?.rating ?? 0;
+      setAvgRating(Number(avg) || 0);
+      console.log("📊 Loaded average rating:", avg);
+    } catch (error) {
+      console.error("Error loading average rating:", error);
     }
   };
 
@@ -74,7 +105,7 @@ export default function BookCoverSection({ bookData, bookId }) {
 
       const backendStatus = statusMap[status];
 
-      console.log(`📚 Adding "${bookData.title}" to ${status}...`);
+      console.log(`📚 Adding "${bookData?.title}" to ${status}...`);
       console.log(`🔍 Backend status value:`, backendStatus);
       console.log(
         `🔍 API URL: /home/addBookByStatus/${bookId}/${backendStatus}`
@@ -88,9 +119,9 @@ export default function BookCoverSection({ bookData, bookId }) {
       setOpenList(false);
 
       // Hiển thị thông báo thành công
-      alert(`✅ Successfully added "${bookData.title}" to ${status}!`);
+      alert(`✅ Successfully added "${bookData?.title}" to ${status}!`);
 
-      console.log(`✅ Added "${bookData.title}" to ${status}`);
+      console.log(`✅ Added "${bookData?.title}" to ${status}`);
     } catch (error) {
       console.error("Error adding to list:", error);
 
@@ -112,13 +143,19 @@ export default function BookCoverSection({ bookData, bookId }) {
   };
 
   const handleAddToCustomList = async (folder) => {
+    if (!isAuthenticated) {
+      alert("Please login to add books to your folder");
+      return;
+    }
+
     try {
       setSaving(true);
-      console.log(`📚 Thêm "${bookData.id}" vào folder "${folder.id}"...`);
+      const targetBookId = bookId ?? bookData?.id;
+      console.log(`📚 Thêm "${targetBookId}" vào folder "${folder.id}"...`);
 
-      await userAPI.addBookToFavorites(bookData.id, folder.id);
+      await userAPI.addBookToFavorites(targetBookId, folder.id);
 
-      alert(`✅ Added "${bookData.title}" to folder "${folder.title}"`);
+      alert(`✅ Added "${bookData?.title}" to folder "${folder.title}"`);
       setOpenList(false);
     } catch (error) {
       console.error("❌ Lỗi khi thêm vào custom list:", error);
@@ -128,7 +165,7 @@ export default function BookCoverSection({ bookData, bookId }) {
     }
   };
 
-  const handleRating = async (rating) => {
+  const handleRating = async (ratingValue) => {
     if (!isAuthenticated) {
       alert("⚠️ Please login to rate this book");
       return;
@@ -137,28 +174,34 @@ export default function BookCoverSection({ bookData, bookId }) {
     try {
       setRating(true);
 
-      console.log(`⭐ Rating "${bookData.title}" with ${rating} stars...`);
+      console.log(`⭐ Rating "${bookData?.title}" with ${ratingValue} stars...`);
 
-      // Gọi API review book với rating
-      await userAPI.reviewBook(bookId, {
-        rating: rating,
-        comment: "", // Comment có thể để trống
-      });
+      // Record a view when the user actively rates the book (if API supports)
+      try {
+        const targetBookId = bookId ?? bookData?.id;
+        if (targetBookId && booksAPI.postViews) {
+          await booksAPI.postViews(targetBookId);
+          console.log("👁️ Recorded view for book (from rating):", targetBookId);
+        }
+      } catch (err) {
+        // Non-fatal: just log
+        console.warn("Unable to post view when rating:", err);
+      }
 
-      // Cập nhật UI
-      setUserRating(rating);
+      // Gọi API review book với đúng payload theo swagger: { point: number }
+      await userAPI.reviewBook(bookId, { point: ratingValue });
+
+      // Cập nhật UI: user đã rating -> show user rating
+      setUserRating(ratingValue);
 
       // Hiển thị thông báo thành công
       alert(
-        `✅ Successfully rated "${bookData.title}" with ${rating} star${
-          rating > 1 ? "s" : ""
+        `✅ Successfully rated "${bookData?.title}" with ${ratingValue} star${
+          ratingValue > 1 ? "s" : ""
         }!`
       );
 
-      console.log(`✅ Rated "${bookData.title}" with ${rating} stars`);
-
-      // Optional: Reload book data để cập nhật average rating
-      // window.location.reload(); // Hoặc dùng state management để refresh
+      console.log(`✅ Rated "${bookData?.title}" with ${ratingValue} stars`);
     } catch (error) {
       console.error("Error rating book:", error);
 
@@ -174,11 +217,23 @@ export default function BookCoverSection({ bookData, bookId }) {
       }
 
       alert(`❌ ${errorMessage}`);
-
-      // Reset rating về giá trị cũ nếu có lỗi
-      // setUserRating(userRating); // Giữ nguyên rating cũ
     } finally {
       setRating(false);
+    }
+  };
+
+  // Track views when user clicks "Read Book"
+  const handleReadClick = async (e) => {
+    // fire-and-forget postViews; don't block navigation
+    try {
+      const targetBookId = bookId ?? bookData?.id;
+      if (targetBookId && booksAPI.postViews) {
+        await booksAPI.postViews(targetBookId);
+        console.log("👁️ Recorded view for book:", targetBookId);
+      }
+    } catch (err) {
+      // Non-fatal: just log
+      console.warn("Unable to post view:", err);
     }
   };
 
@@ -188,8 +243,8 @@ export default function BookCoverSection({ bookData, bookId }) {
         {/* Cover Image */}
         <div className="relative">
           <img
-            src={bookData.coverUrl}
-            alt={bookData.title}
+            src={bookData?.coverUrl}
+            alt={bookData?.title ?? "Book cover"}
             className="w-full rounded-sm shadow-lg"
             onError={(e) => {
               e.target.src =
@@ -197,11 +252,17 @@ export default function BookCoverSection({ bookData, bookId }) {
             }}
           />
 
-          {/* Rating Badge */}
-          {bookData.rating.average > 0 && (
+          {/* Rating Badge (average overall rating) */}
+          {(bookData?.rating?.average > 0 || avgRating > 0) && (
             <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-1 shadow-md">
               <Star size={16} fill="currentColor" />
-              <span>{bookData.rating.average.toFixed(1)}</span>
+              <span>
+                {userRating > 0
+                  ? Number(userRating).toFixed(1)
+                  : (bookData?.rating?.average
+                      ? Number(bookData.rating.average).toFixed(1)
+                      : Number(avgRating).toFixed(1))}
+              </span>
             </div>
           )}
         </div>
@@ -210,6 +271,7 @@ export default function BookCoverSection({ bookData, bookId }) {
         <div className="mt-6 space-y-3">
           <Link
             href={`/books/${bookId}/read`}
+            onClick={handleReadClick}
             className="w-full bg-[#608075] text-white py-2.5 rounded-md font-medium flex items-center justify-center gap-2 transition-colors"
           >
             <span>Read Book</span>
@@ -281,9 +343,7 @@ export default function BookCoverSection({ bookData, bookId }) {
                     )}
 
                     {/* --- Trường hợp không có custom list --- */}
-                    {customLists.length === 0 && (
-                      <div className="border-t my-1" />
-                    )}
+                    {customLists.length === 0 && <div className="border-t my-1" />}
                   </div>
                 </>
               )}
@@ -304,30 +364,31 @@ export default function BookCoverSection({ bookData, bookId }) {
             <div className="pt-2">
               <p className="text-xs text-neutral-500 mb-2 text-center">
                 {userRating > 0
-                  ? `Your rating: ${userRating} star${
-                      userRating > 1 ? "s" : ""
-                    }`
-                  : "Rate this book"}
+                  ? `Your rating: ${userRating} star${userRating > 1 ? "s" : ""}`
+                  : `Average rating: ${avgRating > 0 ? avgRating.toFixed(1) : "N/A"}`}
               </p>
               <div className="flex justify-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => handleRating(star)}
-                    disabled={rating}
-                    className="transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label={`Rate ${star} stars`}
-                  >
-                    <Star
-                      size={24}
-                      className={
-                        star <= userRating ? "text-yellow-400" : "text-gray-300"
-                      }
-                      fill={star <= userRating ? "currentColor" : "none"}
-                      stroke="currentColor"
-                    />
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map((star) => {
+                  // Nếu user đã rate thì hiển thị dựa trên userRating,
+                  // nếu chưa thì hiển thị mức trung bình làm hint (rounded)
+                  const fillThreshold = userRating > 0 ? userRating : Math.round(avgRating);
+                  return (
+                    <button
+                      key={star}
+                      onClick={() => handleRating(star)}
+                      disabled={rating}
+                      className="transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label={`Rate ${star} stars`}
+                    >
+                      <Star
+                        size={24}
+                        className={star <= fillThreshold ? "text-yellow-400" : "text-gray-300"}
+                        fill={star <= (userRating > 0 ? userRating : Math.round(avgRating)) ? "currentColor" : "none"}
+                        stroke="currentColor"
+                      />
+                    </button>
+                  );
+                })}
               </div>
               {rating && (
                 <p className="text-xs text-neutral-400 text-center mt-2">
