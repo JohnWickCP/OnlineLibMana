@@ -137,7 +137,7 @@ export const authAPI = {
       // gửi yêu cầu logout tới server KÈM cookie (credentials)
       const response = await api.post(
         "/api/auth/logout",
-        {},
+        {token },
         { withCredentials: true }
       );
       if (typeof window !== "undefined") {
