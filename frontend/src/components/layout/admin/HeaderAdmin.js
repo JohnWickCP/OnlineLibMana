@@ -12,31 +12,20 @@ export default function HeaderAdmin() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    // ensure we always reset the local logging-out state so the button
-    // text doesn't get stuck when this component stays mounted across routes
     setIsLoggingOut(true);
     try {
       await logout();
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
-      // reset the flag (component may be persistent across route changes)
       setIsLoggingOut(false);
-      // navigate to login page after logout completes
-      // no need for extra timeout; router.push is fine here
       router.push("/admin/login");
     }
   };
 
-  // Khi nhấn logo/link Library: giữ href tĩnh để tránh hydration mismatch,
-  // nhưng xử lý redirect ở client bằng onClick
   const handleLibraryClick = (e) => {
-    // nếu người dùng bấm link, chặn hành vi mặc định và redirect theo auth
     e.preventDefault();
-
-    // nếu auth vẫn đang load, không redirect ngay (có thể show spinner)
     if (loading) return;
-
     if (isAuthenticated) {
       router.push("/admin/dashboard");
     } else {
@@ -51,6 +40,7 @@ export default function HeaderAdmin() {
         <Link
           href="/admin"
           onClick={handleLibraryClick}
+          prefetch={false}                       // <-- disable prefetch
           className="flex items-center text-white no-underline hover:opacity-80 transition"
         >
           <div className="font-bold tracking-widest text-[30px] leading-tight">
@@ -64,6 +54,7 @@ export default function HeaderAdmin() {
             <li>
               <Link
                 href="/admin/books"
+                prefetch={false}                 // <-- disable prefetch
                 className="uppercase hover:text-green-400 text-sm font-medium text-green-400 transition"
               >
                 BOOKS
@@ -73,24 +64,24 @@ export default function HeaderAdmin() {
             <li>
               <Link
                 href="/admin/users"
+                prefetch={false}                 // <-- disable prefetch
                 className="uppercase hover:text-green-400 text-sm font-medium transition"
               >
                 USERS
               </Link>
             </li>
 
-            {/* Nếu chưa đăng nhập thì hiện Login */}
             {!isAuthenticated ? (
               <li>
                 <Link
                   href="/admin/login"
+                  prefetch={false}
                   className="px-4 py-2 bg-gray-200 rounded-full text-black hover:bg-gray-300 transition font-medium"
                 >
                   Login
                 </Link>
               </li>
             ) : (
-              // Nếu đã đăng nhập thì hiện Logout
               <li>
                 <button
                   onClick={handleLogout}
