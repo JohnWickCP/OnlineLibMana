@@ -28,6 +28,22 @@ export default function AdminLoginForm() {
     if (error) setError("");
   };
 
+  // helper: poll for cookie presence up to timeoutMs
+  const waitForCookie = (name, timeoutMs = 2000) =>
+    new Promise((resolve) => {
+      const start = Date.now();
+      const check = () => {
+        if (typeof document !== "undefined" && document.cookie.includes(`${name}=`)) {
+          resolve(true);
+        } else if (Date.now() - start > timeoutMs) {
+          resolve(false);
+        } else {
+          setTimeout(check, 50);
+        }
+      };
+      check();
+    });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -41,9 +57,16 @@ export default function AdminLoginForm() {
       setError("");
 
       await authLogin(formData.email, formData.password);
+
+      // --- WAIT for auth cookie to be present (avoid race with middleware) ---
+      // If your backend sets HttpOnly cookie, ensure authAPI.login sets that cookie.
+      // We poll for 'auth_token' which AuthProvider previously sets client-side.
+      await waitForCookie("auth_token", 2000);
+
+      // then navigate
       router.push("/admin/books");
     } catch (err) {
-  const status = err?.response?.status;
+      const status = err?.response?.status;
       const apiMessage = err?.response?.data?.message || err?.response?.data?.error;
 
       if (status === 401) {
