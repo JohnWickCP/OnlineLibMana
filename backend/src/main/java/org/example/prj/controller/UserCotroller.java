@@ -49,6 +49,15 @@ public class UserCotroller {
                 .result(userService.addReviewBook(bookId, pointRequest.getPoint()))
                 .build();
     }
+
+//    Delete rating
+    @DeleteMapping("/rating/delete/{bookId}")
+    public ApiResponse<String> deleteRating(@PathVariable("bookId") Long bookId) {
+        return ApiResponse.<String>builder()
+                .result(userService.deleteRatingBook(bookId))
+                .build();
+    }
+
 //    Add favourite book folder
     @PostMapping("/addFBfolder")
     public ApiResponse<String> addFBFolder(@RequestBody TilteFolder tilteFolder) throws Exception {
