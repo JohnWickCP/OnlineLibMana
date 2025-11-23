@@ -17,7 +17,8 @@ function ReadBookContent() {
     try {
       setLoading(true);
       const res = await booksAPI.getBookById(id);
-      setBook(res);
+      console.log('✅ Fetched book info:', res);
+      setBook(res.result);
     } catch (err) {
       console.error('❌ Error fetching book info:', err);
     } finally {
@@ -25,22 +26,49 @@ function ReadBookContent() {
     }
   };
 
-  // Nếu DB không có fileUrl → fallback sang standardebooks.org
+  /**
+   * 🔥 Convert link Gutenberg → link HTML online readable
+   * Ví dụ:
+   * Input:  https://www.gutenberg.org/ebooks/2489.epub.images
+   * Output: https://www.gutenberg.org/cache/epub/2489/pg2489-images.html
+   */
+  const convertToGutenbergHtml = (url) => {
+    if (!url) return null;
+
+    // Lấy ID sách từ URL
+    const match = url.match(/\/(\d+)[^/]*$/);
+    const bookId = match ? match[1] : null;
+    if (!bookId) return null;
+
+    return `https://www.gutenberg.org/cache/epub/${bookId}/pg${bookId}-images.html`;
+  };
+
   const buildFallbackUrl = () => {
-    const titleSlug = book?.title
-      ?.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'book';
+    const titleSlug =
+      book?.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') ||
+      'book';
+
     const authorSlug =
       book?.author
         ?.toLowerCase()
         .split(' ')[0]
         .replace(/[^a-z0-9]+/g, '') || 'author';
+
     return `https://standardebooks.org/ebooks/${authorSlug}/${titleSlug}/text/single-page`;
   };
 
+  // Build target URL
+  const buildTargetUrl = () => {
+    if (book?.fileUrl) {
+      const gutenbergHtml = convertToGutenbergHtml(book.fileUrl);
+      if (gutenbergHtml) return gutenbergHtml;
+      return book.fileUrl;
+    }
+    return buildFallbackUrl();
+  };
+
   const handleRedirect = () => {
-    const targetUrl = book?.fileUrl || buildFallbackUrl();
+    const targetUrl = buildTargetUrl();
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -60,7 +88,7 @@ function ReadBookContent() {
     );
   }
 
-  const targetUrl = book.fileUrl || buildFallbackUrl();
+  const targetUrl = buildTargetUrl();
 
   return (
     <div className="min-h-screen bg-[#f5f3ed] flex items-center justify-center px-4">
