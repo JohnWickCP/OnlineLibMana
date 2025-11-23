@@ -159,6 +159,15 @@ public class UserService {
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
     @Transactional
+    public String deleteRatingBook(Long bookId) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username).get();
+        userRepository.deleteRatingBook(bookId,user.getId());
+        return "Delete Successful:" + bookId +" of "+ user.getId();
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
+    @Transactional
     public String deleteStatusBook(Long bookId) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
