@@ -174,7 +174,9 @@ export default function BookCoverSection({ bookData, bookId }) {
     try {
       setRating(true);
 
-      console.log(`⭐ Rating "${bookData?.title}" with ${ratingValue} stars...`);
+      console.log(
+        `⭐ Rating "${bookData?.title}" with ${ratingValue} stars...`
+      );
 
       // Record a view when the user actively rates the book (if API supports)
       try {
@@ -259,9 +261,9 @@ export default function BookCoverSection({ bookData, bookId }) {
               <span>
                 {userRating > 0
                   ? Number(userRating).toFixed(1)
-                  : (bookData?.rating?.average
-                      ? Number(bookData.rating.average).toFixed(1)
-                      : Number(avgRating).toFixed(1))}
+                  : bookData?.rating?.average
+                  ? Number(bookData.rating.average).toFixed(1)
+                  : Number(avgRating).toFixed(1)}
               </span>
             </div>
           )}
@@ -343,7 +345,9 @@ export default function BookCoverSection({ bookData, bookId }) {
                     )}
 
                     {/* --- Trường hợp không có custom list --- */}
-                    {customLists.length === 0 && <div className="border-t my-1" />}
+                    {customLists.length === 0 && (
+                      <div className="border-t my-1" />
+                    )}
                   </div>
                 </>
               )}
@@ -364,14 +368,19 @@ export default function BookCoverSection({ bookData, bookId }) {
             <div className="pt-2">
               <p className="text-xs text-neutral-500 mb-2 text-center">
                 {userRating > 0
-                  ? `Your rating: ${userRating} star${userRating > 1 ? "s" : ""}`
-                  : `Average rating: ${avgRating > 0 ? avgRating.toFixed(1) : "N/A"}`}
+                  ? `Your rating: ${userRating} star${
+                      userRating > 1 ? "s" : ""
+                    }`
+                  : `Average rating: ${
+                      avgRating > 0 ? avgRating.toFixed(1) : "N/A"
+                    }`}
               </p>
               <div className="flex justify-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => {
                   // Nếu user đã rate thì hiển thị dựa trên userRating,
                   // nếu chưa thì hiển thị mức trung bình làm hint (rounded)
-                  const fillThreshold = userRating > 0 ? userRating : Math.round(avgRating);
+                  const fillThreshold =
+                    userRating > 0 ? userRating : Math.round(avgRating);
                   return (
                     <button
                       key={star}
@@ -382,8 +391,17 @@ export default function BookCoverSection({ bookData, bookId }) {
                     >
                       <Star
                         size={24}
-                        className={star <= fillThreshold ? "text-yellow-400" : "text-gray-300"}
-                        fill={star <= (userRating > 0 ? userRating : Math.round(avgRating)) ? "currentColor" : "none"}
+                        className={
+                          star <= fillThreshold
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }
+                        fill={
+                          star <=
+                          (userRating > 0 ? userRating : Math.round(avgRating))
+                            ? "currentColor"
+                            : "none"
+                        }
                         stroke="currentColor"
                       />
                     </button>
@@ -394,6 +412,30 @@ export default function BookCoverSection({ bookData, bookId }) {
                 <p className="text-xs text-neutral-400 text-center mt-2">
                   Submitting rating...
                 </p>
+              )}
+              {/* Clear Rating */}
+              {userRating > 0 && (
+                <div className="text-center mt-3">
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Remove your rating for this book?")) return;
+
+                      try {
+                        await userAPI.deleteRating(bookId);
+                        setUserRating(0);
+                        await loadAverageRating();
+
+                        alert("⭐ Your rating has been cleared!");
+                      } catch (error) {
+                        console.error("❌ Error clearing rating:", error);
+                        alert("Failed to clear rating. Please try again.");
+                      }
+                    }}
+                    className="text-xs text-[#364153] hover:underline"
+                  >
+                    Clear rating
+                  </button>
+                </div>
               )}
             </div>
           ) : (
