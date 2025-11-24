@@ -28,13 +28,13 @@ public class Book {
     private String language;
     private String subject;
 
-    @OneToMany(mappedBy = "book")
+    @OneToMany(mappedBy = "book",cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookshelfItem> bookshelfItems = new ArrayList<>();
 
-    @ManyToMany(mappedBy = "books")
+    @ManyToMany(mappedBy = "books",cascade = CascadeType.ALL)
     private List<FavouriteBooks> favouriteBooks = new ArrayList<>();
 
     // getters and setters
