@@ -24,6 +24,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
         return countNewUsersBetween(start, now);
     }
 
+    @Modifying
+    @Transactional
     @Query(value = "DELETE FROM review WHERE book_id = :bookId AND user_id = :userId", nativeQuery = true)
     void deleteRatingBook(@Param("bookId") Long bookId, @Param("userId") Long userId);
 
