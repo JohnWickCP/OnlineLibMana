@@ -50,6 +50,13 @@ public class UserCotroller {
                 .build();
     }
 
+    @GetMapping("/reviewBook/{id}")
+    public ApiResponse<Double> getReviewBook(@PathVariable("id") Long id) {
+        return ApiResponse.<Double>builder()
+                .result(userService.getReviewBook(id))
+                .build();
+    }
+
 //    Delete rating
     @DeleteMapping("/rating/delete/{bookId}")
     public ApiResponse<String> deleteRating(@PathVariable("bookId") Long bookId) {

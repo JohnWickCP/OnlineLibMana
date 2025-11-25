@@ -122,6 +122,15 @@ public class UserService {
     }
 
     @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
+    public Double getReviewBook(Long bookId) {
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username).get();
+        Double point = reviewRepository.findRatingByBookIdAndUserId(bookId,user.getId());
+        if(point==null) return 0.0;
+        return point;
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_SCOPE_USER')")
     public String addFB(Long bookId,Long listId){
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).get();
