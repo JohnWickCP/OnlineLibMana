@@ -137,7 +137,9 @@ export const authAPI = {
       // gửi yêu cầu logout tới server KÈM cookie (credentials)
       // Note: nếu muốn gửi token trong body/headers, cần lấy token từ localStorage trước.
       const token =
-        typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+        typeof window !== "undefined"
+          ? localStorage.getItem("authToken")
+          : null;
       const response = await api.post(
         "/api/auth/logout",
         { token },
@@ -210,8 +212,6 @@ export const booksAPI = {
     return response.data;
   },
 
-  
-
   postViews: async (bookId) => {
     const response = await api.post(`/book/views/${bookId}`);
     return response.data;
@@ -239,6 +239,10 @@ export const userAPI = {
     const response = await api.delete(`/home/deleteBookByStatus/${bookId}`);
     return response.data;
   },
+  deleteRating: async (bookId) => {
+    const response = await api.delete(`/home/rating/delete/${bookId}`);
+    return response.data;
+  },
 
   // reviewBook: chấp nhận cả { point } hoặc { rating } => chuyển sang { point }
   reviewBook: async (bookId, reviewData) => {
@@ -251,7 +255,9 @@ export const userAPI = {
         point:
           reviewData?.point ??
           reviewData?.rating ??
-          (reviewData && reviewData.hasOwnProperty("comment") ? undefined : reviewData),
+          (reviewData && reviewData.hasOwnProperty("comment")
+            ? undefined
+            : reviewData),
       };
       // remove undefined keys
       if (payload.point === undefined) {
