@@ -221,32 +221,28 @@ export const booksAPI = {
 export const userAPI = {
   getAllUsers: async (page = 0, size = 20) => {
     const response = await api.get("/home/listUser", {
-      params: {
-        page: page,
-        size: size,
-      },
+      params: { page, size },
     });
     return response.data;
   },
 
-  // Gửi rating dưới dạng { point: number } vì backend swagger chỉ định "point"
   postRating: async (bookId, point) => {
     const payload = typeof point === "number" ? { point } : point;
     const response = await api.post(`/home/reviewBook/${bookId}`, payload);
     return response.data;
   },
+
   deleteBookByStatus: async (bookId) => {
     const response = await api.delete(`/home/deleteBookByStatus/${bookId}`);
     return response.data;
   },
+
   deleteRating: async (bookId) => {
     const response = await api.delete(`/home/rating/delete/${bookId}`);
     return response.data;
   },
 
-  // reviewBook: chấp nhận cả { point } hoặc { rating } => chuyển sang { point }
   reviewBook: async (bookId, reviewData) => {
-    // If reviewData is an object with rating or point, normalize to { point }
     let payload;
     if (typeof reviewData === "number") {
       payload = { point: reviewData };
@@ -259,13 +255,17 @@ export const userAPI = {
             ? undefined
             : reviewData),
       };
-      // remove undefined keys
       if (payload.point === undefined) {
-        // fallback: try to send reviewData as-is
         payload = reviewData;
       }
     }
     const response = await api.post(`/home/reviewBook/${bookId}`, payload);
+    return response.data;
+  },
+
+  // 🔥 API mới: lấy review theo bookId
+  getReviewBook: async (bookId) => {
+    const response = await api.get(`/home/reviewBook/${bookId}`);
     return response.data;
   },
 
@@ -325,6 +325,7 @@ export const userAPI = {
     return response.data;
   },
 };
+
 
 export const adminAPI = {
   getDashboard: async () => {
