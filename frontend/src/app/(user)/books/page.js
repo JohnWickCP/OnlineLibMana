@@ -266,7 +266,7 @@ export default function BooksPage() {
           <div className="bg-white border-b border-neutral-200">
             <div className="container mx-auto px-4 py-8">
               <h1 className="text-4xl font-serif font-bold text-neutral-900 mb-2">
-                Browse Standard Ebooks
+                Browse Elib
               </h1>
               <p className="text-neutral-600">Loading...</p>
             </div>

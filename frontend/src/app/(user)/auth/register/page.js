@@ -26,8 +26,7 @@ export default function RegisterPage() {
         <div className="bg-gray-100 p-12 md:w-1/2 flex flex-col justify-center">
           <h1 className="text-5xl font-bold text-gray-900 mb-8">Register</h1>
           <p className="text-gray-600 text-lg leading-relaxed">
-            Sign up to use your free Library card to borrow digital books
-            from the nonprofit Internet Archive.
+            Welcome to Elib
           </p>
         </div>
 
