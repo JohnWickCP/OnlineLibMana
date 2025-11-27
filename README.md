@@ -36,14 +36,13 @@ Dự án được phát triển bởi nhóm 4 sinh viên nhằm học tập và 
 ### Người dùng thường
 - Đăng ký / Đăng nhập (JWT + Magic Link qua email)
 - Tìm kiếm sách theo tên, tác giả, thể loại, năm xuất bản
-- Đọc sách online với giao diện mượt mà, tự động lưu vị trí đọc
+- Đọc sách online 
 - Kệ sách cá nhân: thêm/xóa sách, theo dõi tiến độ đọc
-- Đánh giá sao & viết review sách
-- Nhận thông báo sách mới và sự kiện
+- Đánh giá sao 
 
 ### Admin
 - Dashboard tổng quan: thống kê người dùng, sách, lượt đọc
-- Quản lý sách (CRUD + upload bìa + file PDF)
+- Quản lý sách (CRUD + upload bìa)
 - Quản lý người dùng, phân quyền, khóa tài khoản
 - Báo cáo sách được đọc nhiều nhất, người dùng active
 
@@ -205,7 +204,6 @@ Một số endpoint chính:
 | GET    | /api/books                | Danh sách sách            | Public      |
 | GET    | /api/books/{id}           | Chi tiết sách             | Public      |
 | POST   | /api/books                | Thêm sách                 | Admin       |
-| 
 
 ## Deployment
 
@@ -256,10 +254,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-<div align="center">
-<br>
-<strong>Nếu thấy dự án hữu ích, đừng quên nhấn Star nhé!</strong>
-<br><br>
-Made with ❤️ by <strong>Online Library Team</strong>
-</div>
