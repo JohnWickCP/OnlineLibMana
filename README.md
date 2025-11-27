@@ -104,7 +104,6 @@ OnlineLibMana/
 │   ├── package.json
 │   └── .env.local
 │
-├── docs/                        # Tài liệu bổ sung (nếu có)
 ├── .github/workflows/           # CI/CD GitHub Actions
 ├── .gitignore
 └── README.md
@@ -192,22 +191,10 @@ git pull origin develop
 git checkout -b feature/ten-tinh-nang-ngan-gon
 ```
 
-**Commit message bắt buộc theo convention:**
-
-```
-feat: thêm chức năng đọc sách online
-fix: sửa lỗi login magic link
-docs: cập nhật README
-style: format code
-refactor: tách BookService
-test: thêm test cho AuthController
-chore: update dependencies
-```
 
 ## API Documentation
 
 Swagger UI (khi chạy local): http://localhost:8080/swagger-ui.html  
-Production: https://onlinelibmana.online/swagger-ui.html
 
 Một số endpoint chính:
 
@@ -215,7 +202,6 @@ Một số endpoint chính:
 |--------|---------------------------|---------------------------|-------------|
 | POST   | /api/auth/register        | Đăng ký                   | Public      |
 | POST   | /api/auth/login           | Đăng nhập                 | Public      |
-| GET    | /api/auth/me              | Thông tin user            | Auth        |
 | GET    | /api/books                | Danh sách sách            | Public      |
 | GET    | /api/books/{id}           | Chi tiết sách             | Public      |
 | POST   | /api/books                | Thêm sách                 | Admin       |
@@ -236,14 +222,12 @@ Chúng tôi rất hoan nghênh mọi đóng góp!
 
 ## Team Members
 
-| STT | Họ tên              | Mã sinh viên | Vai trò                    | GitHub            |
-|-----|---------------------|--------------|----------------------------|-------------------|
-| 1   | Nguyễn Văn Anh      | 20xxxxx      | Leader & Full-stack        | @nguyenvananh     |
-| 2   | Trần Thị Bé         | 20xxxxx      | Backend Developer          | @tranthibe        |
-| 3   | Lê Văn Cường        | 20xxxxx      | Frontend Developer         | @levancuong      |
-| 4   | Phạm Thị Dung       | 20xxxxx      | UI/UX & Frontend           | @phamthidung      |
-
-(Bạn chỉ cần thay tên thật + MSSV + GitHub username vào bảng trên)
+| STT | Thành viên                          | Mã sinh viên | Vai trò                | GitHub |
+|-----|-------------------------------------|--------------|--------------------------------|--------|
+| 1   | Cao Xuân Phồn                        | 223630701     | Leader & DevOps            | [@JohnWickCP](https://github.com/JohnWickCP) |
+| 2   | Nguyễn Trọng Hiển                    | 223630689     | Backend Developer              | [@BaggioHin](https://github.com/BaggioHin)     |
+| 3   | DƯƠNG TRUNG HIẾU                     | 223630690      | Tester            | [@Kenge-cyber](https://github.com/Kenge-cyber)         |
+| 4   | HỒ KHẮC NHẬT                          | 223630700     | UI/UX & Frontend Developer            | [@khacnhat](https://github.com/khacnhat2k3)     |
 
 ## License
 
@@ -279,8 +263,3 @@ SOFTWARE.
 <br><br>
 Made with ❤️ by <strong>Online Library Team</strong>
 </div>
-```
-
-Copy hết từ dòng `# Online Library Management System` trở xuống dán thẳng vào file `README.md` trong repository của bạn là xong!
-
-Chúc bảo vệ đạt điểm tuyệt đối nha nhóm!
