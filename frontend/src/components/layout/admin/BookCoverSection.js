@@ -28,7 +28,7 @@ export default function BookCoverSectionAdmin({ bookData, bookId }) {
       await booksAPI.deleteBook(bookId);
       // success feedback and redirect
       alert("Xóa sách thành công.");
-      router.push("admin/books");
+      router.push("/admin/books");
     } catch (err) {
       console.error("Delete failed:", err);
       let msg = "Xóa sách thất bại. Vui lòng thử lại.";
